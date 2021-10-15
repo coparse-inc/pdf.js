@@ -125,7 +125,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.12.9';
+    const workerVersion = '2.12.10';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -23420,6 +23420,7 @@ class PartialEvaluator {
     const textContentItem = {
       initialized: false,
       str: [],
+      rawStr: [],
       totalWidth: 0,
       totalHeight: 0,
       width: 0,
@@ -23556,8 +23557,10 @@ class PartialEvaluator {
       const text = textChunk.str.join("");
       const bidiResult = (0, _bidi.bidi)(text, -1, textChunk.vertical);
       const str = normalizeWhitespace ? replaceWhitespace(bidiResult.str) : bidiResult.str;
+      const rawStr = normalizeWhitespace ? textChunk.rawStr.map(tup => [replaceWhitespace(tup[0]), tup[1]]) : textChunk.rawStr;
       return {
         str,
+        rawStr,
         dir: bidiResult.dir,
         width: textChunk.totalWidth,
         height: textChunk.totalHeight,
@@ -23710,6 +23713,7 @@ class PartialEvaluator {
         }
 
         textChunk.str.push(glyphUnicode);
+        textChunk.rawStr.push([glyphUnicode, size]);
         const glyphWidth = font.vertical && glyph.vmetric ? glyph.vmetric[0] : glyph.width;
         let scaledDim = glyphWidth * scale;
 
@@ -72924,8 +72928,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.12.9';
-const pdfjsBuild = '46cf526';
+const pdfjsVersion = '2.12.10';
+const pdfjsBuild = '9333bc2';
 })();
 
 /******/ 	return __webpack_exports__;
