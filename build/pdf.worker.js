@@ -125,7 +125,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.12.12';
+    const workerVersion = '2.12.13';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -23713,7 +23713,7 @@ class PartialEvaluator {
         }
 
         textChunk.str.push(glyphUnicode);
-        textChunk.rawStr.push([glyphUnicode, textChunk.width]);
+        textChunk.rawStr.push([glyphUnicode, !font.vertical ? textChunk.width : textChunk.height]);
         const glyphWidth = font.vertical && glyph.vmetric ? glyph.vmetric[0] : glyph.width;
         let scaledDim = glyphWidth * scale;
 
@@ -23831,8 +23831,10 @@ class PartialEvaluator {
 
       if (!textContentItem.vertical) {
         textContentItem.totalWidth += textContentItem.width * textContentItem.textAdvanceScale;
+        textContentItem.rawStr = textContentItem.rawStr.map(tup => [tup[0], tup[1] * textContentItem.textAdvanceScale]);
       } else {
         textContentItem.totalHeight += textContentItem.height * textContentItem.textAdvanceScale;
+        textContentItem.rawStr = textContentItem.rawStr.map(tup => [tup[0], tup[1] * textContentItem.textAdvanceScale]);
       }
 
       textContent.items.push(runBidiTransform(textContentItem));
@@ -72929,8 +72931,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.12.12';
-const pdfjsBuild = '22d042a';
+const pdfjsVersion = '2.12.13';
+const pdfjsBuild = '1f48992';
 })();
 
 /******/ 	return __webpack_exports__;
