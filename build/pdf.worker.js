@@ -125,7 +125,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.12.11';
+    const workerVersion = '2.12.12';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -23557,7 +23557,7 @@ class PartialEvaluator {
       const text = textChunk.str.join("");
       const bidiResult = (0, _bidi.bidi)(text, -1, textChunk.vertical);
       const str = normalizeWhitespace ? replaceWhitespace(bidiResult.str) : bidiResult.str;
-      const rawStr = normalizeWhitespace ? textChunk.rawStr.map(tup => [replaceWhitespace(tup[0]), tup[1]]) : textChunk.rawStr;
+      const rawStr = normalizeWhitespace ? textChunk.rawStr.map(tup => [replaceWhitespace(tup[0]), tup[1]]) : textChunk.rawStr.slice();
       return {
         str,
         rawStr,
@@ -23838,6 +23838,7 @@ class PartialEvaluator {
       textContent.items.push(runBidiTransform(textContentItem));
       textContentItem.initialized = false;
       textContentItem.str.length = 0;
+      textContentItem.rawStr.length = 0;
     }
 
     function enqueueChunk(batch = false) {
@@ -72928,8 +72929,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.12.11';
-const pdfjsBuild = 'af0e172';
+const pdfjsVersion = '2.12.12';
+const pdfjsBuild = '22d042a';
 })();
 
 /******/ 	return __webpack_exports__;
