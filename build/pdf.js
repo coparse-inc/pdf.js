@@ -2034,7 +2034,7 @@ async function _fetchDocument(worker, source, pdfDataRangeTransport, docId) {
 
   const workerId = await worker.messageHandler.sendWithPromise("GetDocRequest", {
     docId,
-    apiVersion: '2.12.15',
+    apiVersion: '2.12.17',
     source: {
       data: source.data,
       url: source.url,
@@ -4198,9 +4198,9 @@ class InternalRenderTask {
 
 }
 
-const version = '2.12.15';
+const version = '2.12.17';
 exports.version = version;
-const build = '96e77ed';
+const build = '90fd3cd';
 exports.build = build;
 
 /***/ }),
@@ -9229,6 +9229,7 @@ var _annotation_storage = __w_pdfjs_require__(9);
 var _scripting_utils = __w_pdfjs_require__(19);
 
 const DEFAULT_TAB_INDEX = 1000;
+const UNRENDERED_ANNOTATIONS = [_util.AnnotationType.TEXT, _util.AnnotationType.HIGHLIGHT];
 const GetElementsByNameSet = new WeakSet();
 
 class AnnotationElementFactory {
@@ -11224,7 +11225,7 @@ class AnnotationLayer {
           popupAnnotations = [];
 
     for (const data of parameters.annotations) {
-      if (!data) {
+      if (!data || UNRENDERED_ANNOTATIONS.includes(data.annotationType)) {
         continue;
       }
 
@@ -15778,8 +15779,8 @@ var _svg = __w_pdfjs_require__(21);
 
 var _xfa_layer = __w_pdfjs_require__(22);
 
-const pdfjsVersion = '2.12.15';
-const pdfjsBuild = '96e77ed';
+const pdfjsVersion = '2.12.17';
+const pdfjsBuild = '90fd3cd';
 {
   if (_is_node.isNodeJS) {
     const {
