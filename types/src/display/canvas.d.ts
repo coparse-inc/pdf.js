@@ -19,6 +19,7 @@ export class CanvasGraphics {
     smaskStack: any[];
     smaskCounter: number;
     tempSMask: any;
+    suspendedCtx: any;
     contentVisible: boolean;
     markedContentStack: any[];
     optionalContentConfig: any;
@@ -55,10 +56,19 @@ export class CanvasGraphics {
     setRenderingIntent(intent: any): void;
     setFlatness(flatness: any): void;
     setGState(states: any): void;
-    beginSMaskGroup(): void;
-    suspendSMaskGroup(): void;
-    resumeSMaskGroup(): void;
-    endSMaskGroup(): void;
+    checkSMaskState(): void;
+    /**
+     * Soft mask mode takes the current main drawing canvas and replaces it with
+     * a temporary canvas. Any drawing operations that happen on the temporary
+     * canvas need to be composed with the main canvas that was suspended (see
+     * `compose()`). The temporary canvas also duplicates many of its operations
+     * on the suspended canvas to keep them in sync, so that when the soft mask
+     * mode ends any clipping paths or transformations will still be active and in
+     * the right order on the canvas' graphics state stack.
+     */
+    beginSMaskMode(): void;
+    endSMaskMode(): void;
+    compose(dirtyBox: any): void;
     save(): void;
     restore(): void;
     transform(a: any, b: any, c: any, d: any, e: any, f: any): void;
@@ -127,12 +137,13 @@ export class CanvasGraphics {
     endMarkedContent(): void;
     beginCompat(): void;
     endCompat(): void;
-    consumePath(): void;
+    consumePath(clipBox: any): void;
     getSinglePixelWidth(): number;
     getCanvasPosition(x: any, y: any): any[];
     isContentVisible(): boolean;
 }
 declare class CanvasExtraState {
+    constructor(width: any, height: any);
     alphaIsShape: boolean;
     fontSize: number;
     fontSizeScale: number;
@@ -156,10 +167,20 @@ declare class CanvasExtraState {
     strokeAlpha: number;
     lineWidth: number;
     activeSMask: any;
-    resumeSMaskCtx: any;
     transferMaps: any;
     clone(): any;
     setCurrentPoint(x: any, y: any): void;
+    updatePathMinMax(transform: any, x: any, y: any): void;
+    minX: any;
+    minY: any;
+    maxX: any;
+    maxY: any;
+    updateCurvePathMinMax(transform: any, x0: any, y0: any, x1: any, y1: any, x2: any, y2: any, x3: any, y3: any): void;
+    getPathBoundingBox(): any[];
+    updateClipFromPath(): void;
+    startNewPathAndClipBox(box: any): void;
+    clipBox: any;
+    getClippedPathBoundingBox(): any[] | null;
 }
 declare class CachedCanvases {
     constructor(canvasFactory: any);

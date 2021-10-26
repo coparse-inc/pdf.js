@@ -67,9 +67,9 @@ export const animationStarted: Promise<any>;
  *       necessary Scroll/Spread modes (since SinglePage, TwoPageLeft,
  *       and TwoPageRight all suggests using non-continuous scrolling).
  * @param {string} mode - The API PageLayout value.
- * @returns {number} A value from {SpreadMode}.
+ * @returns {Object}
  */
-export function apiPageLayoutToSpreadMode(layout: any): number;
+export function apiPageLayoutToViewerModes(layout: any): Object;
 /**
  * Converts API PageMode values to the format used by `PDFSidebar`.
  * NOTE: There's also a "FullScreen" parameter which is not possible to support,
@@ -291,6 +291,7 @@ export namespace ScrollMode {
     export const VERTICAL: number;
     export const HORIZONTAL: number;
     export const WRAPPED: number;
+    export const PAGE: number;
 }
 export namespace SidebarView {
     const UNKNOWN_2: number;

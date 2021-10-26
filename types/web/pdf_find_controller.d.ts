@@ -29,6 +29,7 @@ export class PDFFindController {
     constructor({ linkService, eventBus }: PDFFindControllerOptions);
     _linkService: any;
     _eventBus: any;
+    executeCommand: ((cmd: any, state: any) => void) | undefined;
     get highlightMatches(): boolean | undefined;
     get pageMatches(): any[] | undefined;
     get pageMatchesLength(): any[] | undefined;
@@ -45,7 +46,10 @@ export class PDFFindController {
      */
     setDocument(pdfDocument: any): void;
     _pdfDocument: any;
-    executeCommand(cmd: any, state: any): void;
+    /**
+     * @private
+     */
+    private _onFind;
     _dirtyMatch: boolean | undefined;
     _state: any;
     _findTimeout: any;
@@ -82,7 +86,7 @@ export class PDFFindController {
      */
     get _query(): string;
     _rawQuery: any;
-    _shouldDirtyMatch(cmd: any, state: any): boolean;
+    _shouldDirtyMatch(state: any): boolean;
     /**
      * Helper for multi-term search that fills the `matchesWithLength` array
      * and handles cases where one search term includes another search term (for
@@ -112,5 +116,5 @@ export class PDFFindController {
         total: number | undefined;
     };
     _updateUIResultsCount(): void;
-    _updateUIState(state: any, previous: any): void;
+    _updateUIState(state: any, previous?: boolean): void;
 }

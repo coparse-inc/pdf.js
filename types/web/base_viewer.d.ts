@@ -189,10 +189,6 @@ export class BaseViewer {
     /**
      * @private
      */
-    private get _viewerElement();
-    /**
-     * @private
-     */
     private _onePageRenderedOrForceFetch;
     /**
      * @param pdfDocument {PDFDocument}
@@ -223,7 +219,15 @@ export class BaseViewer {
     _onePageRenderedCapability: any;
     _pagesCapability: any;
     _scrollMode: any;
+    _previousScrollMode: any;
     _spreadMode: any;
+    _scrollModePageState: {
+        shadowViewer: DocumentFragment;
+        previousPageNumber: number;
+        scrollDown: boolean;
+        pages: never[];
+    } | undefined;
+    _ensurePageViewVisible(): void;
     _scrollUpdate(): void;
     _scrollIntoView({ pageDiv, pageSpot, pageNumber }: {
         pageDiv: any;
@@ -283,11 +287,9 @@ export class BaseViewer {
         ignoreDestinationZoom?: boolean | undefined;
     }): void;
     _updateLocation(firstPage: any): void;
-    _updateHelper(visiblePages: any): void;
     update(): void;
     containsElement(element: any): boolean;
     focus(): void;
-    get _isScrollModeHorizontal(): boolean;
     get _isContainerRtl(): boolean;
     get isInPresentationMode(): boolean;
     get isChangingPresentationMode(): boolean;
@@ -295,9 +297,8 @@ export class BaseViewer {
     get isVerticalScrollbarEnabled(): boolean;
     /**
      * Helper method for `this._getVisiblePages`. Should only ever be used when
-     * the viewer can only display a single page at a time, for example in:
-     *  - `PDFSinglePageViewer`.
-     *  - `PDFViewer` with Presentation Mode active.
+     * the viewer can only display a single page at a time, for example:
+     *  - When PresentationMode is active.
      */
     _getCurrentVisiblePage(): {
         views: never[];
@@ -457,6 +458,7 @@ export class BaseViewer {
      * @param {number} [steps] - Defaults to zooming once.
      */
     decreaseScale(steps?: number | undefined): void;
+    #private;
 }
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 /**
