@@ -18,5 +18,6 @@ import { ProgressBar } from "./ui_utils.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
+import { TextHighlighter } from "./text_highlighter.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-export { AnnotationLayerBuilder, DefaultAnnotationLayerFactory, DefaultStructTreeLayerFactory, DefaultTextLayerFactory, DefaultXfaLayerFactory, DownloadManager, EventBus, GenericL10n, NullL10n, PDFFindController, PDFHistory, PDFLinkService, PDFPageView, PDFScriptingManager, PDFSinglePageViewer, PDFViewer, ProgressBar, SimpleLinkService, StructTreeLayerBuilder, TextLayerBuilder, XfaLayerBuilder };
+export { AnnotationLayerBuilder, DefaultAnnotationLayerFactory, DefaultStructTreeLayerFactory, DefaultTextLayerFactory, DefaultXfaLayerFactory, DownloadManager, EventBus, GenericL10n, NullL10n, PDFFindController, PDFHistory, PDFLinkService, PDFPageView, PDFScriptingManager, PDFSinglePageViewer, PDFViewer, ProgressBar, SimpleLinkService, StructTreeLayerBuilder, TextLayerBuilder, TextHighlighter, XfaLayerBuilder };

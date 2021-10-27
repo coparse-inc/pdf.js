@@ -1542,6 +1542,279 @@ function apiPageModeToSidebarView(mode) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.TextHighlighter = void 0;
+
+class TextHighlighter {
+  constructor({
+    findController,
+    eventBus,
+    pageIndex
+  }) {
+    this.findController = findController;
+    this.matches = [];
+    this.eventBus = eventBus;
+    this.pageIdx = pageIndex;
+    this._onUpdateTextLayerMatches = null;
+    this.textDivs = null;
+    this.textContentItemsStr = null;
+    this.enabled = false;
+  }
+
+  setTextMapping(divs, texts) {
+    this.textDivs = divs;
+    this.textContentItemsStr = texts;
+  }
+
+  enable() {
+    if (!this.textDivs || !this.textContentItemsStr) {
+      throw new Error("Text divs and strings have not been set.");
+    }
+
+    if (this.enabled) {
+      throw new Error("TextHighlighter is already enabled.");
+    }
+
+    this.enabled = true;
+
+    if (!this._onUpdateTextLayerMatches) {
+      this._onUpdateTextLayerMatches = evt => {
+        if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
+          this._updateMatches();
+        }
+      };
+
+      this.eventBus._on("updatetextlayermatches", this._onUpdateTextLayerMatches);
+    }
+
+    this._updateMatches();
+  }
+
+  disable() {
+    if (!this.enabled) {
+      return;
+    }
+
+    this.enabled = false;
+
+    if (this._onUpdateTextLayerMatches) {
+      this.eventBus._off("updatetextlayermatches", this._onUpdateTextLayerMatches);
+
+      this._onUpdateTextLayerMatches = null;
+    }
+  }
+
+  _convertMatches(matches, matchesLength) {
+    if (!matches) {
+      return [];
+    }
+
+    const {
+      textContentItemsStr
+    } = this;
+    let i = 0,
+        iIndex = 0;
+    const end = textContentItemsStr.length - 1;
+    const result = [];
+
+    for (let m = 0, mm = matches.length; m < mm; m++) {
+      let matchIdx = matches[m];
+
+      while (i !== end && matchIdx >= iIndex + textContentItemsStr[i].length) {
+        iIndex += textContentItemsStr[i].length;
+        i++;
+      }
+
+      if (i === textContentItemsStr.length) {
+        console.error("Could not find a matching mapping");
+      }
+
+      const match = {
+        begin: {
+          divIdx: i,
+          offset: matchIdx - iIndex
+        }
+      };
+      matchIdx += matchesLength[m];
+
+      while (i !== end && matchIdx > iIndex + textContentItemsStr[i].length) {
+        iIndex += textContentItemsStr[i].length;
+        i++;
+      }
+
+      match.end = {
+        divIdx: i,
+        offset: matchIdx - iIndex
+      };
+      result.push(match);
+    }
+
+    return result;
+  }
+
+  _renderMatches(matches) {
+    if (matches.length === 0) {
+      return;
+    }
+
+    const {
+      findController,
+      pageIdx
+    } = this;
+    const {
+      textContentItemsStr,
+      textDivs
+    } = this;
+    const isSelectedPage = pageIdx === findController.selected.pageIdx;
+    const selectedMatchIdx = findController.selected.matchIdx;
+    const highlightAll = findController.state.highlightAll;
+    let prevEnd = null;
+    const infinity = {
+      divIdx: -1,
+      offset: undefined
+    };
+
+    function beginText(begin, className) {
+      const divIdx = begin.divIdx;
+      textDivs[divIdx].textContent = "";
+      return appendTextToDiv(divIdx, 0, begin.offset, className);
+    }
+
+    function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
+      let div = textDivs[divIdx];
+
+      if (div.nodeType === Node.TEXT_NODE) {
+        const span = document.createElement("span");
+        div.parentNode.insertBefore(span, div);
+        span.appendChild(div);
+        textDivs[divIdx] = span;
+        div = span;
+      }
+
+      const content = textContentItemsStr[divIdx].substring(fromOffset, toOffset);
+      const node = document.createTextNode(content);
+
+      if (className) {
+        const span = document.createElement("span");
+        span.className = `${className} appended`;
+        span.appendChild(node);
+        div.appendChild(span);
+        return className.includes("selected") ? span.offsetLeft : 0;
+      }
+
+      div.appendChild(node);
+      return 0;
+    }
+
+    let i0 = selectedMatchIdx,
+        i1 = i0 + 1;
+
+    if (highlightAll) {
+      i0 = 0;
+      i1 = matches.length;
+    } else if (!isSelectedPage) {
+      return;
+    }
+
+    for (let i = i0; i < i1; i++) {
+      const match = matches[i];
+      const begin = match.begin;
+      const end = match.end;
+      const isSelected = isSelectedPage && i === selectedMatchIdx;
+      const highlightSuffix = isSelected ? " selected" : "";
+      let selectedLeft = 0;
+
+      if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
+        if (prevEnd !== null) {
+          appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+        }
+
+        beginText(begin);
+      } else {
+        appendTextToDiv(prevEnd.divIdx, prevEnd.offset, begin.offset);
+      }
+
+      if (begin.divIdx === end.divIdx) {
+        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, end.offset, "highlight" + highlightSuffix);
+      } else {
+        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, infinity.offset, "highlight begin" + highlightSuffix);
+
+        for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
+          textDivs[n0].className = "highlight middle" + highlightSuffix;
+        }
+
+        beginText(end, "highlight end" + highlightSuffix);
+      }
+
+      prevEnd = end;
+
+      if (isSelected) {
+        findController.scrollMatchIntoView({
+          element: textDivs[begin.divIdx],
+          selectedLeft,
+          pageIndex: pageIdx,
+          matchIndex: selectedMatchIdx
+        });
+      }
+    }
+
+    if (prevEnd) {
+      appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
+    }
+  }
+
+  _updateMatches() {
+    if (!this.enabled) {
+      return;
+    }
+
+    const {
+      findController,
+      matches,
+      pageIdx
+    } = this;
+    const {
+      textContentItemsStr,
+      textDivs
+    } = this;
+    let clearedUntilDivIdx = -1;
+
+    for (let i = 0, ii = matches.length; i < ii; i++) {
+      const match = matches[i];
+      const begin = Math.max(clearedUntilDivIdx, match.begin.divIdx);
+
+      for (let n = begin, end = match.end.divIdx; n <= end; n++) {
+        const div = textDivs[n];
+        div.textContent = textContentItemsStr[n];
+        div.className = "";
+      }
+
+      clearedUntilDivIdx = match.end.divIdx + 1;
+    }
+
+    if (!findController?.highlightMatches) {
+      return;
+    }
+
+    const pageMatches = findController.pageMatches[pageIdx] || null;
+    const pageMatchesLength = findController.pageMatchesLength[pageIdx] || null;
+    this.matches = this._convertMatches(pageMatches, pageMatchesLength);
+
+    this._renderMatches(this.matches);
+  }
+
+}
+
+exports.TextHighlighter = TextHighlighter;
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, exports) => {
+
+
+
+Object.defineProperty(exports, "__esModule", ({
+  value: true
+}));
 exports.StructTreeLayerBuilder = exports.DefaultStructTreeLayerFactory = void 0;
 const PDF_ROLE_TO_HTML_ROLE = {
   Document: null,
@@ -1660,7 +1933,7 @@ class DefaultStructTreeLayerFactory {
 exports.DefaultStructTreeLayerFactory = DefaultStructTreeLayerFactory;
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -1838,7 +2111,7 @@ class DefaultTextLayerFactory {
 exports.DefaultTextLayerFactory = DefaultTextLayerFactory;
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -1955,7 +2228,7 @@ class DefaultXfaLayerFactory {
 exports.DefaultXfaLayerFactory = DefaultXfaLayerFactory;
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -1967,7 +2240,7 @@ exports.PDFViewer = exports.PDFSinglePageViewer = void 0;
 
 var _ui_utils = __w_pdfjs_require__(5);
 
-var _base_viewer = __w_pdfjs_require__(10);
+var _base_viewer = __w_pdfjs_require__(11);
 
 class PDFViewer extends _base_viewer.BaseViewer {}
 
@@ -1994,7 +2267,7 @@ class PDFSinglePageViewer extends _base_viewer.BaseViewer {
 exports.PDFSinglePageViewer = PDFSinglePageViewer;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -2008,23 +2281,23 @@ var _pdfjsLib = __w_pdfjs_require__(2);
 
 var _ui_utils = __w_pdfjs_require__(5);
 
-var _pdf_rendering_queue = __w_pdfjs_require__(11);
+var _pdf_rendering_queue = __w_pdfjs_require__(12);
 
 var _annotation_layer_builder = __w_pdfjs_require__(1);
 
 var _l10n_utils = __w_pdfjs_require__(3);
 
-var _pdf_page_view = __w_pdfjs_require__(12);
+var _pdf_page_view = __w_pdfjs_require__(13);
 
 var _pdf_link_service = __w_pdfjs_require__(4);
 
-var _struct_tree_layer_builder = __w_pdfjs_require__(6);
+var _struct_tree_layer_builder = __w_pdfjs_require__(7);
 
-var _text_highlighter = __w_pdfjs_require__(14);
+var _text_highlighter = __w_pdfjs_require__(6);
 
-var _text_layer_builder = __w_pdfjs_require__(7);
+var _text_layer_builder = __w_pdfjs_require__(8);
 
-var _xfa_layer_builder = __w_pdfjs_require__(8);
+var _xfa_layer_builder = __w_pdfjs_require__(9);
 
 const DEFAULT_CACHE_SIZE = 10;
 
@@ -2088,7 +2361,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.12.17';
+    const viewerVersion = '2.12.18';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -3623,7 +3896,7 @@ class BaseViewer {
 exports.BaseViewer = BaseViewer;
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -3783,7 +4056,7 @@ class PDFRenderingQueue {
 exports.PDFRenderingQueue = PDFRenderingQueue;
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
 
@@ -3797,11 +4070,11 @@ var _pdfjsLib = __w_pdfjs_require__(2);
 
 var _ui_utils = __w_pdfjs_require__(5);
 
-var _app_options = __w_pdfjs_require__(13);
+var _app_options = __w_pdfjs_require__(14);
 
 var _l10n_utils = __w_pdfjs_require__(3);
 
-var _pdf_rendering_queue = __w_pdfjs_require__(11);
+var _pdf_rendering_queue = __w_pdfjs_require__(12);
 
 const MAX_CANVAS_PIXELS = _app_options.compatibilityParams.maxCanvasPixels || 16777216;
 
@@ -4563,7 +4836,7 @@ class PDFPageView {
 exports.PDFPageView = PDFPageView;
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ ((__unused_webpack_module, exports) => {
 
 
@@ -4860,279 +5133,6 @@ class AppOptions {
 exports.AppOptions = AppOptions;
 
 /***/ }),
-/* 14 */
-/***/ ((__unused_webpack_module, exports) => {
-
-
-
-Object.defineProperty(exports, "__esModule", ({
-  value: true
-}));
-exports.TextHighlighter = void 0;
-
-class TextHighlighter {
-  constructor({
-    findController,
-    eventBus,
-    pageIndex
-  }) {
-    this.findController = findController;
-    this.matches = [];
-    this.eventBus = eventBus;
-    this.pageIdx = pageIndex;
-    this._onUpdateTextLayerMatches = null;
-    this.textDivs = null;
-    this.textContentItemsStr = null;
-    this.enabled = false;
-  }
-
-  setTextMapping(divs, texts) {
-    this.textDivs = divs;
-    this.textContentItemsStr = texts;
-  }
-
-  enable() {
-    if (!this.textDivs || !this.textContentItemsStr) {
-      throw new Error("Text divs and strings have not been set.");
-    }
-
-    if (this.enabled) {
-      throw new Error("TextHighlighter is already enabled.");
-    }
-
-    this.enabled = true;
-
-    if (!this._onUpdateTextLayerMatches) {
-      this._onUpdateTextLayerMatches = evt => {
-        if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
-          this._updateMatches();
-        }
-      };
-
-      this.eventBus._on("updatetextlayermatches", this._onUpdateTextLayerMatches);
-    }
-
-    this._updateMatches();
-  }
-
-  disable() {
-    if (!this.enabled) {
-      return;
-    }
-
-    this.enabled = false;
-
-    if (this._onUpdateTextLayerMatches) {
-      this.eventBus._off("updatetextlayermatches", this._onUpdateTextLayerMatches);
-
-      this._onUpdateTextLayerMatches = null;
-    }
-  }
-
-  _convertMatches(matches, matchesLength) {
-    if (!matches) {
-      return [];
-    }
-
-    const {
-      textContentItemsStr
-    } = this;
-    let i = 0,
-        iIndex = 0;
-    const end = textContentItemsStr.length - 1;
-    const result = [];
-
-    for (let m = 0, mm = matches.length; m < mm; m++) {
-      let matchIdx = matches[m];
-
-      while (i !== end && matchIdx >= iIndex + textContentItemsStr[i].length) {
-        iIndex += textContentItemsStr[i].length;
-        i++;
-      }
-
-      if (i === textContentItemsStr.length) {
-        console.error("Could not find a matching mapping");
-      }
-
-      const match = {
-        begin: {
-          divIdx: i,
-          offset: matchIdx - iIndex
-        }
-      };
-      matchIdx += matchesLength[m];
-
-      while (i !== end && matchIdx > iIndex + textContentItemsStr[i].length) {
-        iIndex += textContentItemsStr[i].length;
-        i++;
-      }
-
-      match.end = {
-        divIdx: i,
-        offset: matchIdx - iIndex
-      };
-      result.push(match);
-    }
-
-    return result;
-  }
-
-  _renderMatches(matches) {
-    if (matches.length === 0) {
-      return;
-    }
-
-    const {
-      findController,
-      pageIdx
-    } = this;
-    const {
-      textContentItemsStr,
-      textDivs
-    } = this;
-    const isSelectedPage = pageIdx === findController.selected.pageIdx;
-    const selectedMatchIdx = findController.selected.matchIdx;
-    const highlightAll = findController.state.highlightAll;
-    let prevEnd = null;
-    const infinity = {
-      divIdx: -1,
-      offset: undefined
-    };
-
-    function beginText(begin, className) {
-      const divIdx = begin.divIdx;
-      textDivs[divIdx].textContent = "";
-      return appendTextToDiv(divIdx, 0, begin.offset, className);
-    }
-
-    function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
-      let div = textDivs[divIdx];
-
-      if (div.nodeType === Node.TEXT_NODE) {
-        const span = document.createElement("span");
-        div.parentNode.insertBefore(span, div);
-        span.appendChild(div);
-        textDivs[divIdx] = span;
-        div = span;
-      }
-
-      const content = textContentItemsStr[divIdx].substring(fromOffset, toOffset);
-      const node = document.createTextNode(content);
-
-      if (className) {
-        const span = document.createElement("span");
-        span.className = `${className} appended`;
-        span.appendChild(node);
-        div.appendChild(span);
-        return className.includes("selected") ? span.offsetLeft : 0;
-      }
-
-      div.appendChild(node);
-      return 0;
-    }
-
-    let i0 = selectedMatchIdx,
-        i1 = i0 + 1;
-
-    if (highlightAll) {
-      i0 = 0;
-      i1 = matches.length;
-    } else if (!isSelectedPage) {
-      return;
-    }
-
-    for (let i = i0; i < i1; i++) {
-      const match = matches[i];
-      const begin = match.begin;
-      const end = match.end;
-      const isSelected = isSelectedPage && i === selectedMatchIdx;
-      const highlightSuffix = isSelected ? " selected" : "";
-      let selectedLeft = 0;
-
-      if (!prevEnd || begin.divIdx !== prevEnd.divIdx) {
-        if (prevEnd !== null) {
-          appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
-        }
-
-        beginText(begin);
-      } else {
-        appendTextToDiv(prevEnd.divIdx, prevEnd.offset, begin.offset);
-      }
-
-      if (begin.divIdx === end.divIdx) {
-        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, end.offset, "highlight" + highlightSuffix);
-      } else {
-        selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, infinity.offset, "highlight begin" + highlightSuffix);
-
-        for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
-          textDivs[n0].className = "highlight middle" + highlightSuffix;
-        }
-
-        beginText(end, "highlight end" + highlightSuffix);
-      }
-
-      prevEnd = end;
-
-      if (isSelected) {
-        findController.scrollMatchIntoView({
-          element: textDivs[begin.divIdx],
-          selectedLeft,
-          pageIndex: pageIdx,
-          matchIndex: selectedMatchIdx
-        });
-      }
-    }
-
-    if (prevEnd) {
-      appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
-    }
-  }
-
-  _updateMatches() {
-    if (!this.enabled) {
-      return;
-    }
-
-    const {
-      findController,
-      matches,
-      pageIdx
-    } = this;
-    const {
-      textContentItemsStr,
-      textDivs
-    } = this;
-    let clearedUntilDivIdx = -1;
-
-    for (let i = 0, ii = matches.length; i < ii; i++) {
-      const match = matches[i];
-      const begin = Math.max(clearedUntilDivIdx, match.begin.divIdx);
-
-      for (let n = begin, end = match.end.divIdx; n <= end; n++) {
-        const div = textDivs[n];
-        div.textContent = textContentItemsStr[n];
-        div.className = "";
-      }
-
-      clearedUntilDivIdx = match.end.divIdx + 1;
-    }
-
-    if (!findController?.highlightMatches) {
-      return;
-    }
-
-    const pageMatches = findController.pageMatches[pageIdx] || null;
-    const pageMatchesLength = findController.pageMatchesLength[pageIdx] || null;
-    this.matches = this._convertMatches(pageMatches, pageMatchesLength);
-
-    this._renderMatches(this.matches);
-  }
-
-}
-
-exports.TextHighlighter = TextHighlighter;
-
-/***/ }),
 /* 15 */
 /***/ ((__unused_webpack_module, exports, __w_pdfjs_require__) => {
 
@@ -5145,7 +5145,7 @@ exports.DownloadManager = void 0;
 
 var _pdfjsLib = __w_pdfjs_require__(2);
 
-var _app_options = __w_pdfjs_require__(13);
+var _app_options = __w_pdfjs_require__(14);
 
 ;
 
@@ -7572,7 +7572,7 @@ var _pdfjsLib = __w_pdfjs_require__(2);
 
 var _ui_utils = __w_pdfjs_require__(5);
 
-var _pdf_rendering_queue = __w_pdfjs_require__(11);
+var _pdf_rendering_queue = __w_pdfjs_require__(12);
 
 class PDFScriptingManager {
   constructor({
@@ -8187,6 +8187,12 @@ Object.defineProperty(exports, "DefaultAnnotationLayerFactory", ({
     return _annotation_layer_builder.DefaultAnnotationLayerFactory;
   }
 }));
+Object.defineProperty(exports, "TextHighlighter", ({
+  enumerable: true,
+  get: function () {
+    return _text_highlighter.TextHighlighter;
+  }
+}));
 Object.defineProperty(exports, "DefaultStructTreeLayerFactory", ({
   enumerable: true,
   get: function () {
@@ -8304,17 +8310,19 @@ Object.defineProperty(exports, "PDFScriptingManager", ({
 
 var _annotation_layer_builder = __w_pdfjs_require__(1);
 
-var _struct_tree_layer_builder = __w_pdfjs_require__(6);
+var _text_highlighter = __w_pdfjs_require__(6);
 
-var _text_layer_builder = __w_pdfjs_require__(7);
+var _struct_tree_layer_builder = __w_pdfjs_require__(7);
 
-var _xfa_layer_builder = __w_pdfjs_require__(8);
+var _text_layer_builder = __w_pdfjs_require__(8);
+
+var _xfa_layer_builder = __w_pdfjs_require__(9);
 
 var _ui_utils = __w_pdfjs_require__(5);
 
 var _pdf_link_service = __w_pdfjs_require__(4);
 
-var _pdf_viewer = __w_pdfjs_require__(9);
+var _pdf_viewer = __w_pdfjs_require__(10);
 
 var _download_manager = __w_pdfjs_require__(15);
 
@@ -8326,12 +8334,12 @@ var _pdf_find_controller = __w_pdfjs_require__(18);
 
 var _pdf_history = __w_pdfjs_require__(20);
 
-var _pdf_page_view = __w_pdfjs_require__(12);
+var _pdf_page_view = __w_pdfjs_require__(13);
 
 var _pdf_scripting_manager = __w_pdfjs_require__(21);
 
-const pdfjsVersion = '2.12.17';
-const pdfjsBuild = '90fd3cd';
+const pdfjsVersion = '2.12.18';
+const pdfjsBuild = '396b55b';
 })();
 
 /******/ 	return __webpack_exports__;
