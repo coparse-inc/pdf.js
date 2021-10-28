@@ -2361,7 +2361,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.12.18';
+    const viewerVersion = '2.12.19';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -8289,6 +8289,12 @@ Object.defineProperty(exports, "PDFFindController", ({
     return _pdf_find_controller.PDFFindController;
   }
 }));
+Object.defineProperty(exports, "FindState", ({
+  enumerable: true,
+  get: function () {
+    return _pdf_find_controller.FindState;
+  }
+}));
 Object.defineProperty(exports, "PDFHistory", ({
   enumerable: true,
   get: function () {
@@ -8338,8 +8344,8 @@ var _pdf_page_view = __w_pdfjs_require__(13);
 
 var _pdf_scripting_manager = __w_pdfjs_require__(21);
 
-const pdfjsVersion = '2.12.18';
-const pdfjsBuild = '396b55b';
+const pdfjsVersion = '2.12.19';
+const pdfjsBuild = 'a76cb2b';
 })();
 
 /******/ 	return __webpack_exports__;
