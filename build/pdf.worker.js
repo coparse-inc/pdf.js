@@ -125,7 +125,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.12.21';
+    const workerVersion = '2.12.22';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -731,6 +731,7 @@ if (typeof window === "undefined" && !_is_node.isNodeJS && typeof self !== "unde
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.VerbosityLevel = exports.Util = exports.UnknownErrorException = exports.UnexpectedResponseException = exports.UNSUPPORTED_FEATURES = exports.TextRenderingMode = exports.StreamType = exports.RenderingIntentFlag = exports.PermissionFlag = exports.PasswordResponses = exports.PasswordException = exports.PageActionEventType = exports.OPS = exports.MissingPDFException = exports.IsLittleEndianCached = exports.IsEvalSupportedCached = exports.InvalidPDFException = exports.ImageKind = exports.IDENTITY_MATRIX = exports.FormatError = exports.FontType = exports.FONT_IDENTITY_MATRIX = exports.DocumentActionEventType = exports.CMapCompressionType = exports.BaseException = exports.AnnotationType = exports.AnnotationStateModelType = exports.AnnotationReviewState = exports.AnnotationReplyType = exports.AnnotationMode = exports.AnnotationMarkedState = exports.AnnotationFlag = exports.AnnotationFieldFlag = exports.AnnotationBorderStyleType = exports.AnnotationActionEventType = exports.AbortException = void 0;
 exports.arrayByteLength = arrayByteLength;
 exports.arraysToBytes = arraysToBytes;
 exports.assert = assert;
@@ -762,7 +763,6 @@ exports.stringToUTF8String = stringToUTF8String;
 exports.unreachable = unreachable;
 exports.utf8StringToString = utf8StringToString;
 exports.warn = warn;
-exports.VerbosityLevel = exports.Util = exports.UNSUPPORTED_FEATURES = exports.UnknownErrorException = exports.UnexpectedResponseException = exports.TextRenderingMode = exports.StreamType = exports.RenderingIntentFlag = exports.PermissionFlag = exports.PasswordResponses = exports.PasswordException = exports.PageActionEventType = exports.OPS = exports.MissingPDFException = exports.IsLittleEndianCached = exports.IsEvalSupportedCached = exports.InvalidPDFException = exports.ImageKind = exports.IDENTITY_MATRIX = exports.FormatError = exports.FontType = exports.FONT_IDENTITY_MATRIX = exports.DocumentActionEventType = exports.CMapCompressionType = exports.BaseException = exports.AnnotationType = exports.AnnotationStateModelType = exports.AnnotationReviewState = exports.AnnotationReplyType = exports.AnnotationMode = exports.AnnotationMarkedState = exports.AnnotationFlag = exports.AnnotationFieldFlag = exports.AnnotationBorderStyleType = exports.AnnotationActionEventType = exports.AbortException = void 0;
 
 __w_pdfjs_require__(3);
 
@@ -1778,6 +1778,7 @@ exports.isNodeJS = isNodeJS;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.RefSetCache = exports.RefSet = exports.Ref = exports.Name = exports.EOF = exports.Dict = exports.Cmd = void 0;
 exports.clearPrimitiveCaches = clearPrimitiveCaches;
 exports.isCmd = isCmd;
 exports.isDict = isDict;
@@ -1785,7 +1786,6 @@ exports.isName = isName;
 exports.isRef = isRef;
 exports.isRefsEqual = isRefsEqual;
 exports.isStream = isStream;
-exports.RefSetCache = exports.RefSet = exports.Ref = exports.Name = exports.EOF = exports.Dict = exports.Cmd = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -3061,6 +3061,7 @@ exports.ChunkedStreamManager = ChunkedStreamManager;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.XRefParseException = exports.XRefEntryException = exports.ParserEOFException = exports.MissingDataException = void 0;
 exports.collectActions = collectActions;
 exports.encodeToXmlString = encodeToXmlString;
 exports.escapePDFName = escapePDFName;
@@ -3076,7 +3077,6 @@ exports.readUint32 = readUint32;
 exports.recoverJsURL = recoverJsURL;
 exports.toRomanNumerals = toRomanNumerals;
 exports.validateCSSFont = validateCSSFont;
-exports.XRefParseException = exports.XRefEntryException = exports.ParserEOFException = exports.MissingDataException = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -3605,7 +3605,7 @@ exports.NullStream = NullStream;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.PDFDocument = exports.Page = void 0;
+exports.Page = exports.PDFDocument = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -4260,7 +4260,7 @@ class PDFDocument {
     let num = 0;
 
     if (this.xfaFactory) {
-      num = this.xfaFactory.numPages;
+      num = this.xfaFactory.getNumPages();
     } else if (this.linearization) {
       num = this.linearization.numPages;
     } else {
@@ -4614,6 +4614,7 @@ class PDFDocument {
     const docInfo = {
       PDFFormatVersion: version,
       Language: this.catalog.lang,
+      EncryptFilterName: this.xref.encrypt ? this.xref.encrypt.filterName : null,
       IsLinearized: !!this.linearization,
       IsAcroFormPresent: this.formInfo.hasAcroForm,
       IsXFAPresent: this.formInfo.hasXfa,
@@ -5313,11 +5314,11 @@ exports.SegoeuiRegularMetrics = SegoeuiRegularMetrics;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.SEAC_ANALYSIS_ENABLED = exports.MacStandardGlyphOrdering = exports.FontFlags = void 0;
 exports.getFontType = getFontType;
 exports.normalizeFontName = normalizeFontName;
 exports.recoverGlyphName = recoverGlyphName;
 exports.type1FontGlyphMapping = type1FontGlyphMapping;
-exports.SEAC_ANALYSIS_ENABLED = exports.MacStandardGlyphOrdering = exports.FontFlags = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -5486,8 +5487,8 @@ function normalizeFontName(name) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getEncoding = getEncoding;
 exports.ZapfDingbatsEncoding = exports.WinAnsiEncoding = exports.SymbolSetEncoding = exports.StandardEncoding = exports.MacRomanEncoding = exports.ExpertEncoding = void 0;
+exports.getEncoding = getEncoding;
 const ExpertEncoding = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "space", "exclamsmall", "Hungarumlautsmall", "", "dollaroldstyle", "dollarsuperior", "ampersandsmall", "Acutesmall", "parenleftsuperior", "parenrightsuperior", "twodotenleader", "onedotenleader", "comma", "hyphen", "period", "fraction", "zerooldstyle", "oneoldstyle", "twooldstyle", "threeoldstyle", "fouroldstyle", "fiveoldstyle", "sixoldstyle", "sevenoldstyle", "eightoldstyle", "nineoldstyle", "colon", "semicolon", "commasuperior", "threequartersemdash", "periodsuperior", "questionsmall", "", "asuperior", "bsuperior", "centsuperior", "dsuperior", "esuperior", "", "", "", "isuperior", "", "", "lsuperior", "msuperior", "nsuperior", "osuperior", "", "", "rsuperior", "ssuperior", "tsuperior", "", "ff", "fi", "fl", "ffi", "ffl", "parenleftinferior", "", "parenrightinferior", "Circumflexsmall", "hyphensuperior", "Gravesmall", "Asmall", "Bsmall", "Csmall", "Dsmall", "Esmall", "Fsmall", "Gsmall", "Hsmall", "Ismall", "Jsmall", "Ksmall", "Lsmall", "Msmall", "Nsmall", "Osmall", "Psmall", "Qsmall", "Rsmall", "Ssmall", "Tsmall", "Usmall", "Vsmall", "Wsmall", "Xsmall", "Ysmall", "Zsmall", "colonmonetary", "onefitted", "rupiah", "Tildesmall", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "exclamdownsmall", "centoldstyle", "Lslashsmall", "", "", "Scaronsmall", "Zcaronsmall", "Dieresissmall", "Brevesmall", "Caronsmall", "", "Dotaccentsmall", "", "", "Macronsmall", "", "", "figuredash", "hypheninferior", "", "", "Ogoneksmall", "Ringsmall", "Cedillasmall", "", "", "", "onequarter", "onehalf", "threequarters", "questiondownsmall", "oneeighth", "threeeighths", "fiveeighths", "seveneighths", "onethird", "twothirds", "", "", "zerosuperior", "onesuperior", "twosuperior", "threesuperior", "foursuperior", "fivesuperior", "sixsuperior", "sevensuperior", "eightsuperior", "ninesuperior", "zeroinferior", "oneinferior", "twoinferior", "threeinferior", "fourinferior", "fiveinferior", "sixinferior", "seveninferior", "eightinferior", "nineinferior", "centinferior", "dollarinferior", "periodinferior", "commainferior", "Agravesmall", "Aacutesmall", "Acircumflexsmall", "Atildesmall", "Adieresissmall", "Aringsmall", "AEsmall", "Ccedillasmall", "Egravesmall", "Eacutesmall", "Ecircumflexsmall", "Edieresissmall", "Igravesmall", "Iacutesmall", "Icircumflexsmall", "Idieresissmall", "Ethsmall", "Ntildesmall", "Ogravesmall", "Oacutesmall", "Ocircumflexsmall", "Otildesmall", "Odieresissmall", "OEsmall", "Oslashsmall", "Ugravesmall", "Uacutesmall", "Ucircumflexsmall", "Udieresissmall", "Yacutesmall", "Thornsmall", "Ydieresissmall"];
 exports.ExpertEncoding = ExpertEncoding;
 const MacExpertEncoding = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "space", "exclamsmall", "Hungarumlautsmall", "centoldstyle", "dollaroldstyle", "dollarsuperior", "ampersandsmall", "Acutesmall", "parenleftsuperior", "parenrightsuperior", "twodotenleader", "onedotenleader", "comma", "hyphen", "period", "fraction", "zerooldstyle", "oneoldstyle", "twooldstyle", "threeoldstyle", "fouroldstyle", "fiveoldstyle", "sixoldstyle", "sevenoldstyle", "eightoldstyle", "nineoldstyle", "colon", "semicolon", "", "threequartersemdash", "", "questionsmall", "", "", "", "", "Ethsmall", "", "", "onequarter", "onehalf", "threequarters", "oneeighth", "threeeighths", "fiveeighths", "seveneighths", "onethird", "twothirds", "", "", "", "", "", "", "ff", "fi", "fl", "ffi", "ffl", "parenleftinferior", "", "parenrightinferior", "Circumflexsmall", "hypheninferior", "Gravesmall", "Asmall", "Bsmall", "Csmall", "Dsmall", "Esmall", "Fsmall", "Gsmall", "Hsmall", "Ismall", "Jsmall", "Ksmall", "Lsmall", "Msmall", "Nsmall", "Osmall", "Psmall", "Qsmall", "Rsmall", "Ssmall", "Tsmall", "Usmall", "Vsmall", "Wsmall", "Xsmall", "Ysmall", "Zsmall", "colonmonetary", "onefitted", "rupiah", "Tildesmall", "", "", "asuperior", "centsuperior", "", "", "", "", "Aacutesmall", "Agravesmall", "Acircumflexsmall", "Adieresissmall", "Atildesmall", "Aringsmall", "Ccedillasmall", "Eacutesmall", "Egravesmall", "Ecircumflexsmall", "Edieresissmall", "Iacutesmall", "Igravesmall", "Icircumflexsmall", "Idieresissmall", "Ntildesmall", "Oacutesmall", "Ogravesmall", "Ocircumflexsmall", "Odieresissmall", "Otildesmall", "Uacutesmall", "Ugravesmall", "Ucircumflexsmall", "Udieresissmall", "", "eightsuperior", "fourinferior", "threeinferior", "sixinferior", "eightinferior", "seveninferior", "Scaronsmall", "", "centinferior", "twoinferior", "", "Dieresissmall", "", "Caronsmall", "osuperior", "fiveinferior", "", "commainferior", "periodinferior", "Yacutesmall", "", "dollarinferior", "", "", "Thornsmall", "", "nineinferior", "zeroinferior", "Zcaronsmall", "AEsmall", "Oslashsmall", "questiondownsmall", "oneinferior", "Lslashsmall", "", "", "", "", "", "", "Cedillasmall", "", "", "", "", "", "OEsmall", "figuredash", "hyphensuperior", "", "", "", "", "exclamdownsmall", "", "Ydieresissmall", "", "onesuperior", "twosuperior", "threesuperior", "foursuperior", "fivesuperior", "sixsuperior", "sevensuperior", "ninesuperior", "zerosuperior", "", "esuperior", "rsuperior", "tsuperior", "", "", "isuperior", "ssuperior", "dsuperior", "", "", "", "", "", "lsuperior", "Ogoneksmall", "Brevesmall", "Macronsmall", "bsuperior", "nsuperior", "msuperior", "commasuperior", "periodsuperior", "Dotaccentsmall", "Ringsmall", "", "", "", ""];
@@ -17972,8 +17973,8 @@ function reverseIfRtl(chars) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getQuadPoints = getQuadPoints;
 exports.MarkupAnnotation = exports.AnnotationFactory = exports.AnnotationBorderStyle = exports.Annotation = void 0;
+exports.getQuadPoints = getQuadPoints;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -17998,6 +17999,8 @@ var _operator_list = __w_pdfjs_require__(62);
 var _stream = __w_pdfjs_require__(10);
 
 var _writer = __w_pdfjs_require__(71);
+
+var _factory = __w_pdfjs_require__(74);
 
 class AnnotationFactory {
   static create(xref, ref, pdfManager, idFactory, collectFields) {
@@ -18421,7 +18424,7 @@ class Annotation {
         this.borderStyle.setWidth(array[2], this.rectangle);
 
         if (array.length === 4) {
-          this.borderStyle.setDashArray(array[3]);
+          this.borderStyle.setDashArray(array[3], true);
         }
       }
     } else {
@@ -18633,7 +18636,7 @@ class AnnotationBorderStyle {
     }
   }
 
-  setDashArray(dashArray) {
+  setDashArray(dashArray, forceStyle = false) {
     if (Array.isArray(dashArray) && dashArray.length > 0) {
       let isValid = true;
       let allZeros = true;
@@ -18651,6 +18654,10 @@ class AnnotationBorderStyle {
 
       if (isValid && !allZeros) {
         this.dashArray = dashArray;
+
+        if (forceStyle) {
+          this.setStyle(_primitives.Name.get("D"));
+        }
       } else {
         this.width = 0;
       }
@@ -18725,6 +18732,10 @@ class MarkupAnnotation extends Annotation {
       if (!dict.has("C")) {
         this.data.color = null;
       }
+    }
+
+    if (dict.has("RC")) {
+      this.data.richText = _factory.XFAFactory.getRichTextAsHtml(dict.get("RC"));
     }
   }
 
@@ -19945,6 +19956,10 @@ class PopupAnnotation extends Annotation {
     this.data.titleObj = this._title;
     this.setContents(parentItem.get("Contents"));
     this.data.contentsObj = this._contents;
+
+    if (parentItem.has("RC")) {
+      this.data.richText = _factory.XFAFactory.getRichTextAsHtml(parentItem.get("RC"));
+    }
   }
 
 }
@@ -22067,7 +22082,8 @@ class PartialEvaluator {
       operatorList.addOp(_util.OPS.beginGroup, [groupOptions]);
     }
 
-    operatorList.addOp(_util.OPS.paintFormXObjectBegin, [matrix, bbox]);
+    const args = group ? [matrix, null] : [matrix, bbox];
+    operatorList.addOp(_util.OPS.paintFormXObjectBegin, args);
     return this.getOperatorList({
       stream: xobj,
       task,
@@ -26065,7 +26081,14 @@ class CMap {
 
     while (low <= high) {
       this._map[low++] = dstLow;
-      dstLow = dstLow.substring(0, lastByte) + String.fromCharCode(dstLow.charCodeAt(lastByte) + 1);
+      const nextCharCode = dstLow.charCodeAt(lastByte) + 1;
+
+      if (nextCharCode > 0xff) {
+        dstLow = dstLow.substring(0, lastByte - 1) + String.fromCharCode(dstLow.charCodeAt(lastByte - 1) + 1) + "\x00";
+        continue;
+      }
+
+      dstLow = dstLow.substring(0, lastByte) + String.fromCharCode(nextCharCode);
     }
   }
 
@@ -41303,8 +41326,9 @@ exports.ExpertSubsetCharset = ExpertSubsetCharset;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.getSerifFonts = exports.getNonStdFontMap = exports.getGlyphMapForStandardFonts = exports.getFontNameToFileMap = void 0;
 exports.getStandardFontName = getStandardFontName;
-exports.getSymbolsFonts = exports.getSupplementalGlyphMapForCalibri = exports.getSupplementalGlyphMapForArialBlack = exports.getStdFontMap = exports.getSerifFonts = exports.getNonStdFontMap = exports.getGlyphMapForStandardFonts = exports.getFontNameToFileMap = void 0;
+exports.getSymbolsFonts = exports.getSupplementalGlyphMapForCalibri = exports.getSupplementalGlyphMapForArialBlack = exports.getStdFontMap = void 0;
 
 var _core_utils = __w_pdfjs_require__(9);
 
@@ -45198,8 +45222,8 @@ exports.Type1Parser = Type1Parser;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.getTilingPatternIR = getTilingPatternIR;
 exports.Pattern = void 0;
+exports.getTilingPatternIR = getTilingPatternIR;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -46141,8 +46165,8 @@ function getTilingPatternIR(operatorList, dict, color) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.isPDFFunction = isPDFFunction;
 exports.PostScriptEvaluator = exports.PostScriptCompiler = exports.PDFFunctionFactory = void 0;
+exports.isPDFFunction = isPDFFunction;
 
 var _primitives = __w_pdfjs_require__(5);
 
@@ -48153,7 +48177,7 @@ function bidi(str, startLevel = -1, vertical = false) {
   }
 
   if (startLevel === -1) {
-    if (numBidi / strLength < 0.3) {
+    if (numBidi / strLength < 0.3 && strLength > 4) {
       isLTR = true;
       startLevel = 0;
     } else {
@@ -56100,8 +56124,9 @@ function incrementalUpdate({
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.calculateSHA256 = exports.calculateMD5 = exports.PDF20 = exports.PDF17 = exports.CipherTransformFactory = exports.ARCFourCipher = exports.AES256Cipher = exports.AES128Cipher = void 0;
 exports.calculateSHA384 = calculateSHA384;
-exports.PDF20 = exports.PDF17 = exports.CipherTransformFactory = exports.calculateSHA512 = exports.calculateSHA256 = exports.calculateMD5 = exports.ARCFourCipher = exports.AES256Cipher = exports.AES128Cipher = void 0;
+exports.calculateSHA512 = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -57562,6 +57587,7 @@ const CipherTransformFactory = function CipherTransformFactoryClosure() {
         throw new _util.FormatError("unknown encryption method");
       }
 
+      this.filterName = filter.name;
       this.dict = dict;
       const algorithm = dict.get("V");
 
@@ -57764,6 +57790,8 @@ var _util = __w_pdfjs_require__(2);
 
 var _parser = __w_pdfjs_require__(86);
 
+var _xhtml = __w_pdfjs_require__(96);
+
 class XFAFactory {
   constructor(data) {
     try {
@@ -57781,9 +57809,31 @@ class XFAFactory {
     return this.root && this.form;
   }
 
-  _createPages() {
+  _createPagesHelper() {
+    const iterator = this.form[_xfa_object.$toPages]();
+
+    return new Promise((resolve, reject) => {
+      const nextIteration = () => {
+        try {
+          const value = iterator.next();
+
+          if (value.done) {
+            resolve(value.value);
+          } else {
+            setTimeout(nextIteration, 0);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
+
+      setTimeout(nextIteration, 0);
+    });
+  }
+
+  async _createPages() {
     try {
-      this.pages = this.form[_xfa_object.$toHTML]();
+      this.pages = await this._createPagesHelper();
       this.dims = this.pages.children.map(c => {
         const {
           width,
@@ -57800,9 +57850,9 @@ class XFAFactory {
     return this.dims[pageIndex];
   }
 
-  get numPages() {
+  async getNumPages() {
     if (!this.pages) {
-      this._createPages();
+      await this._createPages();
     }
 
     return this.dims.length;
@@ -57837,9 +57887,9 @@ class XFAFactory {
     this.form[_xfa_object.$globalData].fontFinder.add(fonts, reallyMissingFonts);
   }
 
-  getPages() {
+  async getPages() {
     if (!this.pages) {
-      this._createPages();
+      await this._createPages();
     }
 
     const pages = this.pages;
@@ -57859,6 +57909,54 @@ class XFAFactory {
     return Object.values(data).join("");
   }
 
+  static getRichTextAsHtml(rc) {
+    if (!rc || typeof rc !== "string") {
+      return null;
+    }
+
+    try {
+      let root = new _parser.XFAParser(_xhtml.XhtmlNamespace, true).parse(rc);
+
+      if (!["body", "xhtml"].includes(root[_xfa_object.$nodeName])) {
+        const newRoot = _xhtml.XhtmlNamespace.body({});
+
+        newRoot[_xfa_object.$appendChild](root);
+
+        root = newRoot;
+      }
+
+      const result = root[_xfa_object.$toHTML]();
+
+      if (!result.success) {
+        return null;
+      }
+
+      const {
+        html
+      } = result;
+      const {
+        attributes
+      } = html;
+
+      if (attributes) {
+        if (attributes.class) {
+          attributes.class = attributes.class.filter(attr => !attr.startsWith("xfa"));
+        }
+
+        attributes.dir = "auto";
+      }
+
+      return {
+        html,
+        str: root[_xfa_object.$text]()
+      };
+    } catch (e) {
+      (0, _util.warn)(`XFA - an error occurred during parsing of rich text: ${e}`);
+    }
+
+    return null;
+  }
+
 }
 
 exports.XFAFactory = XFAFactory;
@@ -57872,7 +57970,7 @@ exports.XFAFactory = XFAFactory;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
-exports.XmlObject = exports.XFAObjectArray = exports.XFAObject = exports.XFAAttribute = exports.StringObject = exports.OptionObject = exports.Option10 = exports.Option01 = exports.IntegerObject = exports.ContentObject = exports.$uid = exports.$toStyle = exports.$toString = exports.$toHTML = exports.$text = exports.$tabIndex = exports.$setValue = exports.$setSetAttributes = exports.$setId = exports.$searchNode = exports.$root = exports.$resolvePrototypes = exports.$removeChild = exports.$pushPara = exports.$pushGlyphs = exports.$popPara = exports.$onText = exports.$onChildCheck = exports.$onChild = exports.$nsAttributes = exports.$nodeName = exports.$namespaceId = exports.$isUsable = exports.$isTransparent = exports.$isThereMoreWidth = exports.$isSplittable = exports.$isNsAgnostic = exports.$isDescendent = exports.$isDataValue = exports.$isCDATAXml = exports.$isBindable = exports.$insertAt = exports.$indexOf = exports.$ids = exports.$hasSettableValue = exports.$globalData = exports.$getTemplateRoot = exports.$getSubformParent = exports.$getRealChildrenByNameIt = exports.$getParent = exports.$getNextPage = exports.$getExtra = exports.$getDataValue = exports.$getContainedChildren = exports.$getChildrenByNameIt = exports.$getChildrenByName = exports.$getChildrenByClass = exports.$getChildren = exports.$getAvailableSpace = exports.$getAttributes = exports.$getAttributeIt = exports.$flushHTML = exports.$finalize = exports.$extra = exports.$dump = exports.$data = exports.$content = exports.$consumed = exports.$clone = exports.$cleanup = exports.$cleanPage = exports.$clean = exports.$childrenToHTML = exports.$appendChild = exports.$addHTML = exports.$acceptWhitespace = void 0;
+exports.XmlObject = exports.XFAObjectArray = exports.XFAObject = exports.XFAAttribute = exports.StringObject = exports.OptionObject = exports.Option10 = exports.Option01 = exports.IntegerObject = exports.ContentObject = exports.$uid = exports.$toStyle = exports.$toString = exports.$toPages = exports.$toHTML = exports.$text = exports.$tabIndex = exports.$setValue = exports.$setSetAttributes = exports.$setId = exports.$searchNode = exports.$root = exports.$resolvePrototypes = exports.$removeChild = exports.$pushPara = exports.$pushGlyphs = exports.$popPara = exports.$onText = exports.$onChildCheck = exports.$onChild = exports.$nsAttributes = exports.$nodeName = exports.$namespaceId = exports.$isUsable = exports.$isTransparent = exports.$isThereMoreWidth = exports.$isSplittable = exports.$isNsAgnostic = exports.$isDescendent = exports.$isDataValue = exports.$isCDATAXml = exports.$isBindable = exports.$insertAt = exports.$indexOf = exports.$ids = exports.$hasSettableValue = exports.$globalData = exports.$getTemplateRoot = exports.$getSubformParent = exports.$getRealChildrenByNameIt = exports.$getParent = exports.$getNextPage = exports.$getExtra = exports.$getDataValue = exports.$getContainedChildren = exports.$getChildrenByNameIt = exports.$getChildrenByName = exports.$getChildrenByClass = exports.$getChildren = exports.$getAvailableSpace = exports.$getAttributes = exports.$getAttributeIt = exports.$flushHTML = exports.$finalize = exports.$extra = exports.$dump = exports.$data = exports.$content = exports.$consumed = exports.$clone = exports.$cleanup = exports.$cleanPage = exports.$clean = exports.$childrenToHTML = exports.$appendChild = exports.$addHTML = exports.$acceptWhitespace = void 0;
 
 var _utils = __w_pdfjs_require__(76);
 
@@ -58009,6 +58107,8 @@ const $tabIndex = Symbol();
 exports.$tabIndex = $tabIndex;
 const $text = Symbol();
 exports.$text = $text;
+const $toPages = Symbol();
+exports.$toPages = $toPages;
 const $toHTML = Symbol();
 exports.$toHTML = $toHTML;
 const $toString = Symbol();
@@ -58769,11 +58869,13 @@ class XmlObject extends XFAObject {
       return;
     }
 
+    const utf8TagName = (0, _util.utf8StringToString)(tagName);
     const prefix = this[$namespaceId] === NS_DATASETS ? "xfa:" : "";
-    buf.push(`<${prefix}${tagName}`);
+    buf.push(`<${prefix}${utf8TagName}`);
 
     for (const [name, value] of this[_attributes].entries()) {
-      buf.push(` ${name}="${(0, _core_utils.encodeToXmlString)(value[$content])}"`);
+      const utf8Name = (0, _util.utf8StringToString)(name);
+      buf.push(` ${utf8Name}="${(0, _core_utils.encodeToXmlString)(value[$content])}"`);
     }
 
     if (this[_dataValue] !== null) {
@@ -58803,7 +58905,7 @@ class XmlObject extends XFAObject {
       }
     }
 
-    buf.push(`</${prefix}${tagName}>`);
+    buf.push(`</${prefix}${utf8TagName}>`);
   }
 
   [$onChild](child) {
@@ -59066,6 +59168,7 @@ exports.Option10 = Option10;
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.HTMLResult = void 0;
 exports.getBBox = getBBox;
 exports.getColor = getColor;
 exports.getFloat = getFloat;
@@ -59076,7 +59179,6 @@ exports.getRatio = getRatio;
 exports.getRelevant = getRelevant;
 exports.getStringOption = getStringOption;
 exports.stripQuotes = stripQuotes;
-exports.HTMLResult = void 0;
 
 var _util = __w_pdfjs_require__(2);
 
@@ -60308,6 +60410,11 @@ class Binder {
           match = dataNode[_xfa_object.$getRealChildrenByNameIt](child.name, false, this.emptyMerge).next().value;
 
           if (!match) {
+            if (min === 0) {
+              uselessNodes.push(child);
+              continue;
+            }
+
             const nsId = dataNode[_xfa_object.$namespaceId] === NS_DATASETS ? -1 : dataNode[_xfa_object.$namespaceId];
             match = child[_xfa_object.$data] = new _xfa_object.XmlObject(nsId, child.name);
 
@@ -60616,22 +60723,31 @@ function handleBreak(node) {
   const pageArea = target && target[_xfa_object.$getParent]();
 
   let index;
+  let nextPageArea = pageArea;
 
   if (node.startNew) {
     if (target) {
       const contentAreas = pageArea.contentArea.children;
-      index = contentAreas.findIndex(e => e === target) - 1;
+      const indexForCurrent = contentAreas.indexOf(currentContentArea);
+      const indexForTarget = contentAreas.indexOf(target);
+
+      if (indexForCurrent !== -1 && indexForCurrent < indexForTarget) {
+        nextPageArea = null;
+      }
+
+      index = indexForTarget - 1;
     } else {
-      index = currentPageArea.contentArea.children.findIndex(e => e === currentContentArea);
+      index = currentPageArea.contentArea.children.indexOf(currentContentArea);
     }
   } else if (target && target !== currentContentArea) {
     const contentAreas = pageArea.contentArea.children;
-    index = contentAreas.findIndex(e => e === target) - 1;
+    index = contentAreas.indexOf(target) - 1;
+    nextPageArea = pageArea === currentPageArea ? null : pageArea;
   } else {
     return false;
   }
 
-  node[_xfa_object.$extra].target = pageArea === currentPageArea ? null : pageArea;
+  node[_xfa_object.$extra].target = nextPageArea;
   node[_xfa_object.$extra].index = index;
   return true;
 }
@@ -64932,6 +65048,10 @@ class Subform extends _xfa_object.XFAObject {
       style.height = (0, _html_utils.measureToString)(height);
     }
 
+    if ((style.width === "0px" || style.height === "0px") && children.length === 0) {
+      return _utils.HTMLResult.EMPTY;
+    }
+
     const html = {
       name: "div",
       attributes,
@@ -65087,7 +65207,7 @@ class Template extends _xfa_object.XFAObject {
     return (0, _som.searchNode)(this, container, expr, true, true);
   }
 
-  [_xfa_object.$toHTML]() {
+  *[_xfa_object.$toPages]() {
     if (!this.subform.children.length) {
       return _utils.HTMLResult.success({
         name: "div",
@@ -65235,7 +65355,7 @@ class Template extends _xfa_object.XFAObject {
           if (html.html) {
             hasSomething = hasSomething || html.html.children && html.html.children.length !== 0;
             htmlContentAreas[i].children.push(html.html);
-          } else if (!hasSomething) {
+          } else if (!hasSomething && mainHtml.children.length > 1) {
             mainHtml.children.pop();
           }
 
@@ -65321,6 +65441,7 @@ class Template extends _xfa_object.XFAObject {
       }
 
       pageArea = targetPageArea || pageArea[_xfa_object.$getNextPage]();
+      yield null;
     }
   }
 
@@ -66376,7 +66497,7 @@ function addHTML(node, html, bbox) {
 
     case "tb":
       {
-        extra.width = availableSpace.width;
+        extra.width = Math.min(availableSpace.width, Math.max(extra.width, w));
         extra.height += h;
         extra.children.push(html);
         break;
@@ -67246,9 +67367,14 @@ function setPara(node, nodeStyle, value) {
 }
 
 function setFontFamily(xfaFont, node, fontFinder, style) {
+  if (!fontFinder) {
+    delete style.fontFamily;
+    return;
+  }
+
   const name = (0, _utils.stripQuotes)(xfaFont.typeface);
-  const typeface = fontFinder.find(name);
   style.fontFamily = `"${name}"`;
+  const typeface = fontFinder.find(name);
 
   if (typeface) {
     const {
@@ -67294,9 +67420,9 @@ function fixURL(str) {
 Object.defineProperty(exports, "__esModule", ({
   value: true
 }));
+exports.FontFinder = void 0;
 exports.getMetrics = getMetrics;
 exports.selectFont = selectFont;
-exports.FontFinder = void 0;
 
 var _xfa_object = __w_pdfjs_require__(75);
 
@@ -67859,9 +67985,9 @@ var _builder = __w_pdfjs_require__(87);
 var _util = __w_pdfjs_require__(2);
 
 class XFAParser extends _xml_parser.XMLParserBase {
-  constructor() {
+  constructor(rootNameSpace = null, richText = false) {
     super();
-    this._builder = new _builder.Builder();
+    this._builder = new _builder.Builder(rootNameSpace);
     this._stack = [];
     this._globalData = {
       usedTypefaces: new Set()
@@ -67871,6 +67997,7 @@ class XFAParser extends _xml_parser.XMLParserBase {
     this._errorCode = _xml_parser.XMLParserErrorCode.NoError;
     this._whiteRegex = /^\s+$/;
     this._nbsps = /\xa0+/g;
+    this._richText = richText;
   }
 
   parse(data) {
@@ -67888,8 +68015,8 @@ class XFAParser extends _xml_parser.XMLParserBase {
   onText(text) {
     text = text.replace(this._nbsps, match => match.slice(1) + " ");
 
-    if (this._current[_xfa_object.$acceptWhitespace]()) {
-      this._current[_xfa_object.$onText](text);
+    if (this._richText || this._current[_xfa_object.$acceptWhitespace]()) {
+      this._current[_xfa_object.$onText](text, this._richText);
 
       return;
     }
@@ -68092,7 +68219,7 @@ class Empty extends _xfa_object.XFAObject {
 }
 
 class Builder {
-  constructor() {
+  constructor(rootNameSpace = null) {
     this._namespaceStack = [];
     this._nsAgnosticLevel = 0;
     this._namespacePrefixes = new Map();
@@ -68100,7 +68227,7 @@ class Builder {
     this._nextNsId = Math.max(...Object.values(_namespaces.NamespaceIds).map(({
       id
     }) => id));
-    this._currentNamespace = new _unknown.UnknownNamespace(++this._nextNsId);
+    this._currentNamespace = rootNameSpace || new _unknown.UnknownNamespace(++this._nextNsId);
   }
 
   buildRoot(ids) {
@@ -70971,6 +71098,7 @@ var _html_utils = __w_pdfjs_require__(82);
 var _utils = __w_pdfjs_require__(76);
 
 const XHTML_NS_ID = _namespaces.NamespaceIds.xhtml.id;
+const $richText = Symbol();
 const VALID_STYLES = new Set(["color", "font", "font-family", "font-size", "font-stretch", "font-style", "font-weight", "margin", "margin-bottom", "margin-left", "margin-right", "margin-top", "letter-spacing", "line-height", "orphans", "page-break-after", "page-break-before", "page-break-inside", "tab-interval", "tab-stop", "text-align", "text-decoration", "text-indent", "vertical-align", "widows", "kerning-mode", "xfa-font-horizontal-scale", "xfa-font-vertical-scale", "xfa-spacerun", "xfa-tab-stops"]);
 const StyleMapping = new Map([["page-break-after", "breakAfter"], ["page-break-before", "breakBefore"], ["page-break-inside", "breakInside"], ["kerning-mode", value => value === "none" ? "none" : "normal"], ["xfa-font-horizontal-scale", value => `scaleX(${Math.max(0, Math.min(parseInt(value) / 100)).toFixed(2)})`], ["xfa-font-vertical-scale", value => `scaleY(${Math.max(0, Math.min(parseInt(value) / 100)).toFixed(2)})`], ["xfa-spacerun", ""], ["xfa-tab-stops", ""], ["font-size", (value, original) => {
   value = original.fontSize = (0, _utils.getMeasurement)(value);
@@ -70978,6 +71106,7 @@ const StyleMapping = new Map([["page-break-after", "breakAfter"], ["page-break-b
 }], ["letter-spacing", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["line-height", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["margin", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["margin-bottom", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["margin-left", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["margin-right", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["margin-top", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["text-indent", value => (0, _html_utils.measureToString)((0, _utils.getMeasurement)(value))], ["font-family", value => value]]);
 const spacesRegExp = /\s+/g;
 const crlfRegExp = /[\r\n]+/g;
+const crlfForRichTextRegExp = /\r\n?/g;
 
 function mapStyle(styleStr, node) {
   const style = Object.create(null);
@@ -71048,6 +71177,7 @@ const NoWhites = new Set(["body", "html"]);
 class XhtmlObject extends _xfa_object.XmlObject {
   constructor(attributes, name) {
     super(XHTML_NS_ID, name);
+    this[$richText] = false;
     this.style = attributes.style || "";
   }
 
@@ -71061,11 +71191,15 @@ class XhtmlObject extends _xfa_object.XmlObject {
     return !NoWhites.has(this[_xfa_object.$nodeName]);
   }
 
-  [_xfa_object.$onText](str) {
-    str = str.replace(crlfRegExp, "");
+  [_xfa_object.$onText](str, richText = false) {
+    if (!richText) {
+      str = str.replace(crlfRegExp, "");
 
-    if (!this.style.includes("xfa-spacerun:yes")) {
-      str = str.replace(spacesRegExp, " ");
+      if (!this.style.includes("xfa-spacerun:yes")) {
+        str = str.replace(spacesRegExp, " ");
+      }
+    } else {
+      this[$richText] = true;
     }
 
     if (str) {
@@ -71188,6 +71322,14 @@ class XhtmlObject extends _xfa_object.XmlObject {
       return _utils.HTMLResult.EMPTY;
     }
 
+    let value;
+
+    if (this[$richText]) {
+      value = this[_xfa_object.$content] ? this[_xfa_object.$content].replace(crlfForRichTextRegExp, "\n") : undefined;
+    } else {
+      value = this[_xfa_object.$content] || undefined;
+    }
+
     return _utils.HTMLResult.success({
       name: this[_xfa_object.$nodeName],
       attributes: {
@@ -71195,7 +71337,7 @@ class XhtmlObject extends _xfa_object.XmlObject {
         style: mapStyle(this.style, this)
       },
       children,
-      value: this[_xfa_object.$content] || ""
+      value
     });
   }
 
@@ -71359,6 +71501,12 @@ class P extends XhtmlObject {
   }
 
   [_xfa_object.$text]() {
+    const siblings = this[_xfa_object.$getParent]()[_xfa_object.$getChildren]();
+
+    if (siblings[siblings.length - 1] === this) {
+      return super[_xfa_object.$text]();
+    }
+
     return super[_xfa_object.$text]() + "\n";
   }
 
@@ -73043,8 +73191,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.12.21';
-const pdfjsBuild = '55f44e5';
+const pdfjsVersion = '2.12.22';
+const pdfjsBuild = 'f8ff390';
 })();
 
 /******/ 	return __webpack_exports__;

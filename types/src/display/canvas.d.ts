@@ -24,7 +24,6 @@ export class CanvasGraphics {
     markedContentStack: any[];
     optionalContentConfig: any;
     cachedCanvases: CachedCanvases;
-    cachedCanvasPatterns: LRUCache;
     cachedPatterns: Map<any, any>;
     _cachedGetSinglePixelWidth: number | null;
     beginDrawing({ transform, viewport, transparency, background, }: {
@@ -176,30 +175,17 @@ declare class CanvasExtraState {
     maxX: any;
     maxY: any;
     updateCurvePathMinMax(transform: any, x0: any, y0: any, x1: any, y1: any, x2: any, y2: any, x3: any, y3: any): void;
-    getPathBoundingBox(): any[];
+    getPathBoundingBox(pathType?: string, transform?: null): any[];
     updateClipFromPath(): void;
     startNewPathAndClipBox(box: any): void;
     clipBox: any;
-    getClippedPathBoundingBox(): any[] | null;
+    getClippedPathBoundingBox(pathType?: string, transform?: null): any[] | null;
 }
 declare class CachedCanvases {
     constructor(canvasFactory: any);
     canvasFactory: any;
     cache: any;
     getCanvas(id: any, width: any, height: any, trackTransform: any): any;
-    clear(): void;
-}
-/**
- * Least recently used cache implemented with a JS Map. JS Map keys are ordered
- * by last insertion.
- */
-declare class LRUCache {
-    constructor(maxSize?: number);
-    _cache: Map<any, any>;
-    _maxSize: number;
-    has(key: any): boolean;
-    get(key: any): any;
-    set(key: any, value: any): void;
     clear(): void;
 }
 export {};

@@ -226,11 +226,6 @@ export const MAX_AUTO_SCALE: 1.25;
 export const MAX_SCALE: 10;
 export const MIN_SCALE: 0.1;
 /**
- * Moves all elements of an array that satisfy condition to the end of the
- * array, preserving the order of the rest.
- */
-export function moveToEndOfArray(arr: any, condition: any): void;
-/**
  * Event handler to suppress context menu.
  */
 export function noContextMenuHandler(evt: any): void;
