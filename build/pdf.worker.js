@@ -125,7 +125,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.12.23';
+    const workerVersion = '2.12.24';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -23894,7 +23894,7 @@ class PartialEvaluator {
       if (textContentItem.spaceInFlowMin <= width && width <= textContentItem.spaceInFlowMax) {
         if (textContentItem.initialized) {
           textContentItem.str.push(" ");
-          textContentItem.rawStr.push([glyphUnicode, (!font.vertical ? textContentItem.width : textContentItem.height) + width]);
+          textContentItem.rawStr.push([" ", (!font.vertical ? textContentItem.width : textContentItem.height) + width]);
         }
 
         return false;
@@ -23918,7 +23918,7 @@ class PartialEvaluator {
         fontName,
         hasEOL: false
       });
-      textContentItem.rawStr.push([glyphUnicode, width]);
+      textContentItem.rawStr.push([" ", width]);
       return true;
     }
 
@@ -73195,8 +73195,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.12.23';
-const pdfjsBuild = 'c91d69e';
+const pdfjsVersion = '2.12.24';
+const pdfjsBuild = '3917056';
 })();
 
 /******/ 	return __webpack_exports__;
