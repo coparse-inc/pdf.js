@@ -2366,7 +2366,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.12.24';
+    const viewerVersion = '2.12.25';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -8255,6 +8255,12 @@ Object.defineProperty(exports, "PDFPageView", ({
     return _pdf_page_view.PDFPageView;
   }
 }));
+Object.defineProperty(exports, "PDFRenderingQueue", ({
+  enumerable: true,
+  get: function () {
+    return _pdf_rendering_queue.PDFRenderingQueue;
+  }
+}));
 Object.defineProperty(exports, "PDFScriptingManager", ({
   enumerable: true,
   get: function () {
@@ -8277,6 +8283,12 @@ Object.defineProperty(exports, "ProgressBar", ({
   enumerable: true,
   get: function () {
     return _ui_utils.ProgressBar;
+  }
+}));
+Object.defineProperty(exports, "RenderingStates", ({
+  enumerable: true,
+  get: function () {
+    return _pdf_rendering_queue.RenderingStates;
   }
 }));
 Object.defineProperty(exports, "SimpleLinkService", ({
@@ -8338,10 +8350,12 @@ var _pdf_history = __w_pdfjs_require__(20);
 
 var _pdf_page_view = __w_pdfjs_require__(13);
 
+var _pdf_rendering_queue = __w_pdfjs_require__(12);
+
 var _pdf_scripting_manager = __w_pdfjs_require__(21);
 
-const pdfjsVersion = '2.12.24';
-const pdfjsBuild = '3917056';
+const pdfjsVersion = '2.12.25';
+const pdfjsBuild = '36b16bb';
 })();
 
 /******/ 	return __webpack_exports__;

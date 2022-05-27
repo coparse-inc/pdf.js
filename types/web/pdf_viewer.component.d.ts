@@ -21,4 +21,6 @@ import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-export { AnnotationLayerBuilder, DefaultAnnotationLayerFactory, DefaultStructTreeLayerFactory, DefaultTextLayerFactory, DefaultXfaLayerFactory, DownloadManager, EventBus, GenericL10n, NullL10n, FindState, PDFFindController, PDFHistory, PDFLinkService, PDFPageView, PDFScriptingManager, PDFSinglePageViewer, PDFViewer, ProgressBar, SimpleLinkService, StructTreeLayerBuilder, TextLayerBuilder, TextHighlighter, XfaLayerBuilder };
+import { RenderingStates } from "./pdf_rendering_queue.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+export { AnnotationLayerBuilder, DefaultAnnotationLayerFactory, DefaultStructTreeLayerFactory, DefaultTextLayerFactory, DefaultXfaLayerFactory, DownloadManager, EventBus, GenericL10n, NullL10n, FindState, PDFFindController, PDFHistory, PDFLinkService, PDFPageView, PDFScriptingManager, PDFSinglePageViewer, PDFViewer, ProgressBar, SimpleLinkService, StructTreeLayerBuilder, TextLayerBuilder, TextHighlighter, XfaLayerBuilder, RenderingStates, PDFRenderingQueue };
