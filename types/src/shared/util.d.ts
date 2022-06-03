@@ -164,7 +164,6 @@ export namespace CMapCompressionType {
     export const BINARY: number;
     export const STREAM: number;
 }
-export function createObjectURL(data: any, contentType?: string, forceDataSchema?: boolean): string;
 /**
  * Promise Capability object.
  *
@@ -198,6 +197,11 @@ export namespace DocumentActionEventType {
     const DP: string;
 }
 export function escapeString(str: any): any;
+export class FeatureTest {
+    static get isLittleEndian(): any;
+    static get isEvalSupported(): any;
+    static get isOffscreenCanvasSupported(): any;
+}
 export const FONT_IDENTITY_MATRIX: number[];
 export namespace FontType {
     const UNKNOWN: string;
@@ -238,12 +242,7 @@ export class InvalidPDFException extends InvalidPDFException_base {
 export function isArrayBuffer(v: any): boolean;
 export function isArrayEqual(arr1: any, arr2: any): boolean;
 export function isAscii(str: any): boolean;
-export function isBool(v: any): boolean;
-export namespace IsEvalSupportedCached { }
-export namespace IsLittleEndianCached { }
-export function isNum(v: any): boolean;
-export function isSameOrigin(baseUrl: any, otherUrl: any): boolean;
-export function isString(v: any): boolean;
+export const LINE_FACTOR: 1.35;
 declare const MissingPDFException_base: any;
 export class MissingPDFException extends MissingPDFException_base {
     [x: string]: any;
@@ -370,10 +369,6 @@ export namespace PermissionFlag {
     export const ASSEMBLE: number;
     export const PRINT_HIGH_QUALITY: number;
 }
-/**
- * @param {string} str
- */
-export function removeNullCharacters(str: string): string;
 export namespace RenderingIntentFlag {
     export const ANY: number;
     export const DISPLAY: number;
@@ -457,6 +452,7 @@ export namespace UNSUPPORTED_FEATURES {
 export function utf8StringToString(str: any): string;
 export class Util {
     static makeHexColor(r: any, g: any, b: any): string;
+    static scaleMinMax(transform: any, minMax: any): void;
     static transform(m1: any, m2: any): any[];
     static applyTransform(p: any, m: any): any[];
     static applyInverseTransform(p: any, m: any): number[];
@@ -465,7 +461,7 @@ export class Util {
     static apply3dTransform(m: any, v: any): number[];
     static singularValueDecompose2dScale(m: any): number[];
     static normalizeRect(rect: any): any;
-    static intersect(rect1: any, rect2: any): any[] | null;
+    static intersect(rect1: any, rect2: any): number[] | null;
     static bezierBoundingBox(x0: any, y0: any, x1: any, y1: any, x2: any, y2: any, x3: any, y3: any): number[];
 }
 export namespace VerbosityLevel {
