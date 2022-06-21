@@ -213,10 +213,10 @@ export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLay
     get onePageRendered(): any;
     get pagesPromise(): any;
     /**
-     * @param {PDFDocumentProxy} pdfDocument
+     * @param {?PDFDocumentProxy} pdfDocument
      */
-    setDocument(pdfDocument: PDFDocumentProxy): void;
-    pdfDocument: import("../src/display/api").PDFDocumentProxy | undefined;
+    setDocument(pdfDocument: PDFDocumentProxy | null): void;
+    pdfDocument: import("../src/display/api").PDFDocumentProxy | null | undefined;
     _scrollMode: any;
     _optionalContentConfigPromise: Promise<any> | Promise<import("../src/display/optional_content_config.js").OptionalContentConfig> | null | undefined;
     /**
