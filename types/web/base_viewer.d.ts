@@ -113,6 +113,7 @@ export type PDFViewerOptions = {
  * @implements {IPDFStructTreeLayerFactory}
  * @implements {IPDFTextLayerFactory}
  * @implements {IPDFXfaLayerFactory}
+ * @property {PDFPageView} _pages
  */
 export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
     /**
@@ -242,6 +243,25 @@ export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLay
     _previousScrollMode: any;
     _spreadMode: any;
     _scrollUpdate(): void;
+    /**
+     * @typedef {Object} ScrollIntoViewPageSpot
+     * @property {number} top - Top offset
+     * @property {number} left - Left offset
+     */
+    /**
+     * @param {PDFPageView} pageView - the scroll target
+     * @param {?ScrollIntoViewPageSpot} [pageSpot] - the optional offset
+     */
+    scrollIntoView(pageView: PDFPageView, pageSpot?: {
+        /**
+         * - Top offset
+         */
+        top: number;
+        /**
+         * - Left offset
+         */
+        left: number;
+    } | null | undefined): void;
     _setScaleUpdatePages(newScale: any, newValue: any, noScroll?: boolean, preset?: boolean): void;
     /**
      * @private
@@ -492,6 +512,7 @@ export class PDFPageViewBuffer {
     #private;
 }
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFPageView } from "./pdf_page_view.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
