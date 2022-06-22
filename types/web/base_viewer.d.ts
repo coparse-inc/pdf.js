@@ -113,7 +113,6 @@ export type PDFViewerOptions = {
  * @implements {IPDFStructTreeLayerFactory}
  * @implements {IPDFTextLayerFactory}
  * @implements {IPDFXfaLayerFactory}
- * @property {PDFPageView} _pages
  */
 export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
     /**
@@ -149,7 +148,7 @@ export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLay
     _onBeforeDraw: ((evt: any) => void) | null;
     _onAfterDraw: any;
     get pagesCount(): number;
-    getPageView(index: any): any;
+    getPageView(index: any): PDFPageView;
     /**
      * @type {boolean} - True if all {PDFPageView} objects are initialized.
      */
@@ -226,7 +225,8 @@ export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLay
     setPageLabels(labels: any[] | null): void;
     _pageLabels: any[] | null | undefined;
     _resetView(): void;
-    _pages: any[] | undefined;
+    /** @type {PDFPageView[]} */
+    _pages: PDFPageView[] | undefined;
     _currentScale: any;
     _currentScaleValue: any;
     _location: {
