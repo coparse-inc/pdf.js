@@ -1357,7 +1357,7 @@ async function _fetchDocument(worker, source, pdfDataRangeTransport, docId) {
 
   const workerId = await worker.messageHandler.sendWithPromise("GetDocRequest", {
     docId,
-    apiVersion: '2.15.29',
+    apiVersion: '2.15.30',
     source: {
       data: source.data,
       url: source.url,
@@ -3494,9 +3494,9 @@ class InternalRenderTask {
 
 }
 
-const version = '2.15.29';
+const version = '2.15.30';
 exports.version = version;
-const build = '95df4a5';
+const build = '478900e';
 exports.build = build;
 
 /***/ }),
@@ -9645,7 +9645,7 @@ var _scripting_utils = __w_pdfjs_require__(21);
 var _xfa_layer = __w_pdfjs_require__(22);
 
 const DEFAULT_TAB_INDEX = 1000;
-const UNRENDERED_ANNOTATIONS = [_util.AnnotationType.TEXT, _util.AnnotationType.HIGHLIGHT];
+const UNRENDERED_ANNOTATIONS = [_util.AnnotationType.TEXT, _util.AnnotationType.HIGHLIGHT, _util.AnnotationType.UNDERLINE, _util.AnnotationType.STRIKEOUT];
 const DEFAULT_FONT_SIZE = 9;
 const GetElementsByNameSet = new WeakSet();
 
@@ -16419,8 +16419,8 @@ var _svg = __w_pdfjs_require__(24);
 
 var _xfa_layer = __w_pdfjs_require__(22);
 
-const pdfjsVersion = '2.15.29';
-const pdfjsBuild = '95df4a5';
+const pdfjsVersion = '2.15.30';
+const pdfjsBuild = '478900e';
 {
   if (_is_node.isNodeJS) {
     const {
