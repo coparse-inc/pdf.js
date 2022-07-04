@@ -117,7 +117,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.15.32';
+    const workerVersion = '2.15.33';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -3697,7 +3697,7 @@ var _xref = __w_pdfjs_require__(101);
 
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
-const UNRENDERED_ANNOTATIONS = ["Text", "Highlight"];
+const UNRENDERED_ANNOTATIONS = ["Text", "Highlight", "Underline", "Strikeout"];
 
 class Page {
   constructor({
@@ -3970,7 +3970,9 @@ class Page {
       const opListPromises = [];
 
       for (const annotation of annotations) {
-        if (UNRENDERED_ANNOTATIONS.includes(annotation.data.subtype)) continue;
+        if (UNRENDERED_ANNOTATIONS.includes(annotation.data.subtype)) {
+          continue;
+        }
 
         if (intentAny || intentDisplay && annotation.mustBeViewed(annotationStorage) || intentPrint && annotation.mustBePrinted(annotationStorage)) {
           opListPromises.push(annotation.getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage).catch(function (reason) {
@@ -74481,8 +74483,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.15.32';
-const pdfjsBuild = 'f0083e2';
+const pdfjsVersion = '2.15.33';
+const pdfjsBuild = '2488068';
 })();
 
 /******/ 	return __webpack_exports__;
