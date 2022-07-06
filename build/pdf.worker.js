@@ -117,7 +117,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.15.33';
+    const workerVersion = '2.15.34';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -3697,7 +3697,7 @@ var _xref = __w_pdfjs_require__(101);
 
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
-const UNRENDERED_ANNOTATIONS = ["Text", "Highlight", "Underline", "Strikeout"];
+const UNRENDERED_ANNOTATIONS = ["Text", "Highlight", "Underline", "StrikeOut"];
 
 class Page {
   constructor({
@@ -74483,8 +74483,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.15.33';
-const pdfjsBuild = '2488068';
+const pdfjsVersion = '2.15.34';
+const pdfjsBuild = 'b3c8aea';
 })();
 
 /******/ 	return __webpack_exports__;
