@@ -26,6 +26,10 @@ export type PDFThumbnailViewerOptions = {
      */
     l10n: IL10n;
     /**
+     * - Width of thubmnails
+     */
+    thumbnailWidth?: number | undefined;
+    /**
      * - Overwrites background and foreground colors
      * with user defined ones in order to improve readability in high contrast
      * mode.
@@ -40,6 +44,7 @@ export type PDFThumbnailViewerOptions = {
  * @property {IPDFLinkService} linkService - The navigation/linking service.
  * @property {PDFRenderingQueue} renderingQueue - The rendering queue object.
  * @property {IL10n} l10n - Localization service.
+ * @property {number} [thumbnailWidth] - Width of thubmnails
  * @property {Object} [pageColors] - Overwrites background and foreground colors
  *   with user defined ones in order to improve readability in high contrast
  *   mode.
@@ -51,7 +56,7 @@ export class PDFThumbnailViewer {
     /**
      * @param {PDFThumbnailViewerOptions} options
      */
-    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewerOptions);
+    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, thumbnailWidth, }: PDFThumbnailViewerOptions);
     container: HTMLDivElement;
     linkService: import("./interfaces").IPDFLinkService;
     renderingQueue: import("./pdf_rendering_queue").PDFRenderingQueue;

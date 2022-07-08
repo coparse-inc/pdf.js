@@ -35,6 +35,10 @@ export type PDFThumbnailViewOptions = {
      */
     l10n: IL10n;
     /**
+     * - Width of thubmnails
+     */
+    thumbnailWidth?: number | undefined;
+    /**
      * - Overwrites background and foreground colors
      * with user defined ones in order to improve readability in high contrast
      * mode.
@@ -48,7 +52,7 @@ export class PDFThumbnailView implements IRenderableView {
     /**
      * @param {PDFThumbnailViewOptions} options
      */
-    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, checkSetImageDisabled, l10n, pageColors, }: PDFThumbnailViewOptions);
+    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, checkSetImageDisabled, l10n, pageColors, thumbnailWidth, }: PDFThumbnailViewOptions);
     id: number;
     renderingId: string;
     pageLabel: string | null;
@@ -115,6 +119,7 @@ export class PDFThumbnailView implements IRenderableView {
  * @property {PDFRenderingQueue} renderingQueue - The rendering queue object.
  * @property {function} checkSetImageDisabled
  * @property {IL10n} l10n - Localization service.
+ * @property {number} [thumbnailWidth] - Width of thubmnails
  * @property {Object} [pageColors] - Overwrites background and foreground colors
  *   with user defined ones in order to improve readability in high contrast
  *   mode.

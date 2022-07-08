@@ -6437,7 +6437,8 @@ class PDFThumbnailView {
     renderingQueue,
     checkSetImageDisabled,
     l10n,
-    pageColors
+    pageColors,
+    thumbnailWidth
   }) {
     this.id = id;
     this.renderingId = "thumbnail" + id;
@@ -6461,7 +6462,7 @@ class PDFThumbnailView {
     const pageWidth = this.viewport.width,
           pageHeight = this.viewport.height,
           pageRatio = pageWidth / pageHeight;
-    this.canvasWidth = THUMBNAIL_WIDTH;
+    this.canvasWidth = thumbnailWidth ?? THUMBNAIL_WIDTH;
     this.canvasHeight = this.canvasWidth / pageRatio | 0;
     this.scale = this.canvasWidth / pageWidth;
     this.l10n = l10n;
@@ -6791,19 +6792,23 @@ const THUMBNAIL_SCROLL_MARGIN = -19;
 const THUMBNAIL_SELECTED_CLASS = "selected";
 
 class PDFThumbnailViewer {
+  #thumbnailWidth;
+
   constructor({
     container,
     eventBus,
     linkService,
     renderingQueue,
     l10n,
-    pageColors
+    pageColors,
+    thumbnailWidth
   }) {
     this.container = container;
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
     this.l10n = l10n;
     this.pageColors = pageColors || null;
+    this.#thumbnailWidth = thumbnailWidth;
 
     if (this.pageColors && !(CSS.supports("color", this.pageColors.background) && CSS.supports("color", this.pageColors.foreground))) {
       if (this.pageColors.background || this.pageColors.foreground) {
@@ -6973,7 +6978,8 @@ class PDFThumbnailViewer {
           renderingQueue: this.renderingQueue,
           checkSetImageDisabled,
           l10n: this.l10n,
-          pageColors: this.pageColors
+          pageColors: this.pageColors,
+          thumbnailWidth: this.#thumbnailWidth
         });
 
         this._thumbnails.push(thumbnail);
@@ -7226,7 +7232,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.36';
+    const viewerVersion = '2.15.37';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9359,8 +9365,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.36';
-const pdfjsBuild = 'edbbec1';
+const pdfjsVersion = '2.15.37';
+const pdfjsBuild = 'fddd3ac';
 })();
 
 /******/ 	return __webpack_exports__;
