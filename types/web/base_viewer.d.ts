@@ -236,6 +236,7 @@ export class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLay
         left: number;
         rotation: any;
         pdfOpenParams: string;
+        viewportScale: number;
         scaledYPos: number;
     } | null | undefined;
     _firstPageCapability: any;
