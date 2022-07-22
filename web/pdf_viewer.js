@@ -4748,6 +4748,10 @@ class PDFPageView {
           continue;
       }
 
+      if (annotationLayerNode && (node.classList?.contains("processedOverlayContainer") || node.classList?.contains("pageOverlayContainer"))) {
+        continue;
+      }
+
       node.remove();
     }
 
@@ -7232,7 +7236,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.40';
+    const viewerVersion = '2.15.41';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9368,8 +9372,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.40';
-const pdfjsBuild = '3ab110e';
+const pdfjsVersion = '2.15.41';
+const pdfjsBuild = '6ea137c';
 })();
 
 /******/ 	return __webpack_exports__;
