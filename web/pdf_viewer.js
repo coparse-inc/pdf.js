@@ -7232,7 +7232,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.39';
+    const viewerVersion = '2.15.40';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -8179,9 +8179,10 @@ class BaseViewer {
     const normalizedScaleValue = parseFloat(currentScaleValue) === currentScale ? Math.round(currentScale * 10000) / 100 : currentScaleValue;
     const pageNumber = firstPage.id;
     const currentPageView = this._pages[pageNumber - 1];
-    const container = this.container;
-    const yPos = container.scrollTop - firstPage.y;
-    const topLeft = currentPageView.getPagePoint(container.scrollLeft - firstPage.x, yPos);
+    const x = this.scroll.lastX;
+    const y = this.scroll.lastY;
+    const yPos = y - firstPage.y;
+    const topLeft = currentPageView.getPagePoint(x - firstPage.x, yPos);
     const intLeft = Math.round(topLeft[0]);
     const intTop = Math.round(topLeft[1]);
     let pdfOpenParams = `#page=${pageNumber}`;
@@ -9367,8 +9368,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.39';
-const pdfjsBuild = '4f3fb08';
+const pdfjsVersion = '2.15.40';
+const pdfjsBuild = '3ab110e';
 })();
 
 /******/ 	return __webpack_exports__;
