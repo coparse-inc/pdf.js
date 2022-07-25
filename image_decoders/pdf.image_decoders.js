@@ -8985,8 +8985,8 @@ var _jpg = __w_pdfjs_require__(10);
 
 var _jpx = __w_pdfjs_require__(11);
 
-const pdfjsVersion = '2.15.42';
-const pdfjsBuild = '6b7bfbf';
+const pdfjsVersion = '2.15.43';
+const pdfjsBuild = 'f31349f';
 })();
 
 /******/ 	return __webpack_exports__;

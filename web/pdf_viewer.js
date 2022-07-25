@@ -4756,6 +4756,11 @@ class PDFPageView {
     }
 
     div.removeAttribute("data-loaded");
+    this.eventBus.dispatch("pagereset", {
+      source: this,
+      pageNumber: this.id,
+      keepAnnotationLayer
+    });
 
     if (annotationLayerNode) {
       this.annotationLayer.hide();
@@ -7148,7 +7153,7 @@ var _text_layer_builder = __w_pdfjs_require__(8);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const DEFAULT_CACHE_SIZE = 10;
+const DEFAULT_CACHE_SIZE = 20;
 const ENABLE_PERMISSIONS_CLASS = "enablePermissions";
 const PagesCountLimit = {
   FORCE_SCROLL_MODE_PAGE: 15000,
@@ -7236,7 +7241,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.42';
+    const viewerVersion = '2.15.43';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9372,8 +9377,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.42';
-const pdfjsBuild = '6b7bfbf';
+const pdfjsVersion = '2.15.43';
+const pdfjsBuild = 'f31349f';
 })();
 
 /******/ 	return __webpack_exports__;
