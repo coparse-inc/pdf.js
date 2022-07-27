@@ -5983,6 +5983,10 @@ class PDFScriptingManager {
     Promise.resolve().then(() => {
       if (pdfDocument === this._pdfDocument) {
         this._ready = true;
+
+        this._eventBus.dispatch("scriptingready", {
+          source: this
+        });
       }
     });
   }
@@ -7241,7 +7245,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.43';
+    const viewerVersion = '2.15.44';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9377,8 +9381,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.43';
-const pdfjsBuild = 'f31349f';
+const pdfjsVersion = '2.15.44';
+const pdfjsBuild = 'de07b76';
 })();
 
 /******/ 	return __webpack_exports__;
