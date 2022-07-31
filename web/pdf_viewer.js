@@ -1684,7 +1684,9 @@ class TextLayerBuilder {
     this.highlighter = highlighter;
     this.enhanceTextSelection = enhanceTextSelection;
 
-    this._bindMouse();
+    if (!enhanceTextSelection) {
+      this._bindMouse();
+    }
   }
 
   _finishRendering() {
@@ -7250,7 +7252,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.45';
+    const viewerVersion = '2.15.46';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9386,8 +9388,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.45';
-const pdfjsBuild = 'd3dc331';
+const pdfjsVersion = '2.15.46';
+const pdfjsBuild = '06e81d6';
 })();
 
 /******/ 	return __webpack_exports__;
