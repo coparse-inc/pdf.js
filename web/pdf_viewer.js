@@ -1660,7 +1660,7 @@ exports.TextLayerBuilder = void 0;
 
 var _pdfjsLib = __w_pdfjs_require__(2);
 
-const EXPAND_DIVS_TIMEOUT = 300;
+const EXPAND_DIVS_TIMEOUT = 200;
 
 class TextLayerBuilder {
   constructor({
@@ -1688,6 +1688,7 @@ class TextLayerBuilder {
   }
 
   _finishRendering() {
+    this.textLayerRenderTask.expandTextDivs(true);
     this.renderingDone = true;
 
     if (!this.enhanceTextSelection) {
@@ -1784,6 +1785,10 @@ class TextLayerBuilder {
     });
     div.addEventListener("mouseup", () => {
       if (this.enhanceTextSelection && this.textLayerRenderTask) {
+        if (expandDivsTimer) {
+          clearTimeout(expandDivsTimer);
+        }
+
         expandDivsTimer = setTimeout(() => {
           if (this.textLayerRenderTask) {
             this.textLayerRenderTask.expandTextDivs(false);
@@ -7245,7 +7250,7 @@ class BaseViewer {
       throw new Error("Cannot initialize BaseViewer.");
     }
 
-    const viewerVersion = '2.15.44';
+    const viewerVersion = '2.15.45';
 
     if (_pdfjsLib.version !== viewerVersion) {
       throw new Error(`The API version "${_pdfjsLib.version}" does not match the Viewer version "${viewerVersion}".`);
@@ -9381,8 +9386,8 @@ var _ui_utils = __w_pdfjs_require__(6);
 
 var _xfa_layer_builder = __w_pdfjs_require__(9);
 
-const pdfjsVersion = '2.15.44';
-const pdfjsBuild = 'de07b76';
+const pdfjsVersion = '2.15.45';
+const pdfjsBuild = 'd3dc331';
 })();
 
 /******/ 	return __webpack_exports__;
