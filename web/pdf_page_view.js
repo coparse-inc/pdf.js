@@ -77,7 +77,7 @@ import { TextAccessibilityManager } from "./text_accessibility.js";
  *   The default value is `AnnotationMode.ENABLE_FORMS`.
  * @property {IPDFAnnotationLayerFactory} [annotationLayerFactory]
  * @property {IPDFAnnotationEditorLayerFactory} [annotationEditorLayerFactory]
- * @property {IPDFXfaLayerFactory} [xfaLayerFactory]
+ * @property {?IPDFXfaLayerFactory} [xfaLayerFactory]
  * @property {IPDFStructTreeLayerFactory} [structTreeLayerFactory]
  * @property {Object} [textHighlighterFactory]
  * @property {string} [imageResourcesPath] - Path for image resources, mainly
