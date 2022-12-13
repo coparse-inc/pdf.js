@@ -54,7 +54,6 @@ import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { PDFSinglePageViewer, PDFViewer } from "./pdf_viewer.js";
 import { PDFSinglePageViewer } from "./pdf_single_page_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
