@@ -155,10 +155,11 @@ class Util extends PDFObject {
           }
           if (decPart.length > 2) {
             decPart = `${decimalSep}${decPart.substring(2)}`;
-          } else if (cFlags & HASH) {
-            decPart = ".";
           } else {
-            decPart = "";
+            if (decPart === "1") {
+              intPart += Math.sign(arg);
+            }
+            decPart = cFlags & HASH ? "." : "";
           }
         }
 
@@ -296,6 +297,7 @@ class Util extends PDFObject {
 
   printx(cFormat, cSource) {
     // case
+    cSource = (cSource ?? "").toString();
     const handlers = [x => x, x => x.toUpperCase(), x => x.toLowerCase()];
     const buf = [];
     let i = 0;

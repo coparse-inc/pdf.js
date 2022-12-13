@@ -29,7 +29,6 @@ class Field extends PDFObject {
     this.buttonScaleHow = data.buttonScaleHow;
     this.ButtonScaleWhen = data.buttonScaleWhen;
     this.calcOrderIndex = data.calcOrderIndex;
-    this.charLimit = data.charLimit;
     this.comb = data.comb;
     this.commitOnSelChange = data.commitOnSelChange;
     this.currentValueIndices = data.currentValueIndices;
@@ -57,7 +56,6 @@ class Field extends PDFObject {
     this.required = data.required;
     this.richText = data.richText;
     this.richValue = data.richValue;
-    this.rotation = data.rotation;
     this.style = data.style;
     this.submitName = data.submitName;
     this.textFont = data.textFont;
@@ -70,6 +68,7 @@ class Field extends PDFObject {
     this._browseForFileToSubmit = data.browseForFileToSubmit || null;
     this._buttonCaption = null;
     this._buttonIcon = null;
+    this._charLimit = data.charLimit;
     this._children = null;
     this._currentValueIndices = data.currentValueIndices || 0;
     this._document = data.doc;
@@ -77,16 +76,21 @@ class Field extends PDFObject {
     this._fillColor = data.fillColor || ["T"];
     this._isChoice = Array.isArray(data.items);
     this._items = data.items || [];
+    this._hasValue = data.hasOwnProperty("value");
     this._page = data.page || 0;
     this._strokeColor = data.strokeColor || ["G", 0];
     this._textColor = data.textColor || ["G", 0];
-    this._value = data.value || "";
+    this._value = null;
     this._kidIds = data.kidIds || null;
     this._fieldType = getFieldType(this._actions);
     this._siblings = data.siblings || null;
+    this._rotation = data.rotation || 0;
 
     this._globalEval = data.globalEval;
     this._appObjects = data.appObjects;
+
+    // The value is set depending on the field type.
+    this.value = data.value || "";
   }
 
   get currentValueIndices() {
@@ -151,6 +155,17 @@ class Field extends PDFObject {
     this.fillColor = color;
   }
 
+  get charLimit() {
+    return this._charLimit;
+  }
+
+  set charLimit(limit) {
+    if (typeof limit !== "number") {
+      throw new Error("Invalid argument value");
+    }
+    this._charLimit = Math.max(0, Math.floor(limit));
+  }
+
   get numItems() {
     if (!this._isChoice) {
       throw new Error("Not a choice widget");
@@ -188,6 +203,22 @@ class Field extends PDFObject {
     throw new Error("field.page is read-only");
   }
 
+  get rotation() {
+    return this._rotation;
+  }
+
+  set rotation(angle) {
+    angle = Math.floor(angle);
+    if (angle % 90 !== 0) {
+      throw new Error("Invalid rotation: must be a multiple of 90");
+    }
+    angle %= 360;
+    if (angle < 0) {
+      angle += 360;
+    }
+    this._rotation = angle;
+  }
+
   get textColor() {
     return this._textColor;
   }
@@ -215,12 +246,13 @@ class Field extends PDFObject {
       this._value = "";
     } else if (typeof value === "string") {
       switch (this._fieldType) {
+        case FieldType.none:
+          this._value = !isNaN(value) ? parseFloat(value) : value;
+          break;
         case FieldType.number:
         case FieldType.percent:
-          value = parseFloat(value);
-          if (!isNaN(value)) {
-            this._value = value;
-          }
+          const number = parseFloat(value);
+          this._value = !isNaN(number) ? number : 0;
           break;
         default:
           this._value = value;
@@ -366,15 +398,32 @@ class Field extends PDFObject {
   }
 
   getArray() {
+    // Gets the array of terminal child fields (that is, fields that can have
+    // a value for this Field object, the parent field).
     if (this._kidIds) {
-      return this._kidIds.map(id => this._appObjects[id].wrapped);
+      const array = [];
+      const fillArrayWithKids = kidIds => {
+        for (const id of kidIds) {
+          const obj = this._appObjects[id];
+          if (!obj) {
+            continue;
+          }
+          if (obj.obj._hasValue) {
+            array.push(obj.wrapped);
+          }
+          if (obj.obj._kidIds) {
+            fillArrayWithKids(obj.obj._kidIds);
+          }
+        }
+      };
+      fillArrayWithKids(this._kidIds);
+      return array;
     }
 
     if (this._children === null) {
-      this._children = this._document.obj
-        ._getChildren(this._fieldPath)
-        .map(child => child.wrapped);
+      this._children = this._document.obj._getTerminalChildren(this._fieldPath);
     }
+
     return this._children;
   }
 
@@ -518,6 +567,9 @@ class RadioButtonField extends Field {
         this._id = radioData.id;
       }
     }
+
+    this._hasBeenInitialized = true;
+    this._value = data.value || "";
   }
 
   get value() {
@@ -525,6 +577,10 @@ class RadioButtonField extends Field {
   }
 
   set value(value) {
+    if (!this._hasBeenInitialized) {
+      return;
+    }
+
     if (value === null || value === undefined) {
       this._value = "";
     }

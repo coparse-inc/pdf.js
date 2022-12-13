@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
+import { AnnotationFactory, PopupAnnotation } from "./annotation.js";
 import {
   assert,
   FormatError,
   info,
   InvalidPDFException,
   isArrayEqual,
-  OPS,
   PageActionEventType,
   RenderingIntentFlag,
   shadow,
@@ -34,15 +34,16 @@ import {
 import {
   collectActions,
   getInheritableProperty,
+  getNewAnnotationsMap,
   isWhiteSpace,
   MissingDataException,
+  PDF_VERSION_REGEXP,
   validateCSSFont,
   XRefEntryException,
   XRefParseException,
 } from "./core_utils.js";
 import { Dict, isName, Name, Ref } from "./primitives.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
-import { AnnotationFactory } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { calculateMD5 } from "./crypto.js";
 import { Catalog } from "./catalog.js";
@@ -55,6 +56,7 @@ import { OperatorList } from "./operator_list.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
 import { StructTreePage } from "./struct_tree.js";
+import { writeObject } from "./writer.js";
 import { XFAFactory } from "./xfa/factory.js";
 import { XRef } from "./xref.js";
 
@@ -132,10 +134,12 @@ class Page {
     // For robustness: The spec states that a \Resources entry has to be
     // present, but can be empty. Some documents still omit it; in this case
     // we return an empty dictionary.
+    const resources = this._getInheritableProperty("Resources");
+
     return shadow(
       this,
       "resources",
-      this._getInheritableProperty("Resources") || Dict.empty
+      resources instanceof Dict ? resources : Dict.empty
     );
   }
 
@@ -143,14 +147,14 @@ class Page {
     if (this.xfaData) {
       return this.xfaData.bbox;
     }
-
-    const box = this._getInheritableProperty(name, /* getArray = */ true);
+    let box = this._getInheritableProperty(name, /* getArray = */ true);
 
     if (Array.isArray(box) && box.length === 4) {
-      if (box[2] - box[0] !== 0 && box[3] - box[1] !== 0) {
+      box = Util.normalizeRect(box);
+      if (box[2] - box[0] > 0 && box[3] - box[1] > 0) {
         return box;
       }
-      warn(`Empty /${name} entry.`);
+      warn(`Empty, or invalid, /${name} entry.`);
     }
     return null;
   }
@@ -187,18 +191,15 @@ class Page {
     // extend beyond the boundaries of the media box. If they do, they are
     // effectively reduced to their intersection with the media box."
     const { cropBox, mediaBox } = this;
-    let view;
-    if (cropBox === mediaBox || isArrayEqual(cropBox, mediaBox)) {
-      view = mediaBox;
-    } else {
+
+    if (cropBox !== mediaBox && !isArrayEqual(cropBox, mediaBox)) {
       const box = Util.intersect(cropBox, mediaBox);
-      if (box && box[2] - box[0] !== 0 && box[3] - box[1] !== 0) {
-        view = box;
-      } else {
-        warn("Empty /CropBox and /MediaBox intersection.");
+      if (box && box[2] - box[0] > 0 && box[3] - box[1] > 0) {
+        return shadow(this, "view", box);
       }
+      warn("Empty /CropBox and /MediaBox intersection.");
     }
-    return shadow(this, "view", view || mediaBox);
+    return shadow(this, "view", mediaBox);
   }
 
   get rotate() {
@@ -262,6 +263,61 @@ class Page {
     );
   }
 
+  async saveNewAnnotations(handler, task, annotations) {
+    if (this.xfaFactory) {
+      throw new Error("XFA: Cannot save new annotations.");
+    }
+
+    const partialEvaluator = new PartialEvaluator({
+      xref: this.xref,
+      handler,
+      pageIndex: this.pageIndex,
+      idFactory: this._localIdFactory,
+      fontCache: this.fontCache,
+      builtInCMapCache: this.builtInCMapCache,
+      standardFontDataCache: this.standardFontDataCache,
+      globalImageCache: this.globalImageCache,
+      options: this.evaluatorOptions,
+    });
+
+    const pageDict = this.pageDict;
+    const annotationsArray = this.annotations.slice();
+    const newData = await AnnotationFactory.saveNewAnnotations(
+      partialEvaluator,
+      task,
+      annotations
+    );
+
+    for (const { ref } of newData.annotations) {
+      annotationsArray.push(ref);
+    }
+
+    const savedDict = pageDict.get("Annots");
+    pageDict.set("Annots", annotationsArray);
+    const buffer = [];
+
+    let transform = null;
+    if (this.xref.encrypt) {
+      transform = this.xref.encrypt.createCipherTransform(
+        this.ref.num,
+        this.ref.gen
+      );
+    }
+
+    writeObject(this.ref, pageDict, buffer, transform);
+    if (savedDict) {
+      pageDict.set("Annots", savedDict);
+    }
+
+    const objects = newData.dependencies;
+    objects.push(
+      { ref: this.ref, data: buffer.join("") },
+      ...newData.annotations
+    );
+
+    return objects;
+  }
+
   save(handler, task, annotationStorage) {
     const partialEvaluator = new PartialEvaluator({
       xref: this.xref,
@@ -296,7 +352,9 @@ class Page {
         );
       }
 
-      return Promise.all(newRefsPromises);
+      return Promise.all(newRefsPromises).then(function (newRefs) {
+        return newRefs.filter(newRef => !!newRef);
+      });
     });
   }
 
@@ -342,6 +400,21 @@ class Page {
       options: this.evaluatorOptions,
     });
 
+    const newAnnotationsByPage = !this.xfaFactory
+      ? getNewAnnotationsMap(annotationStorage)
+      : null;
+
+    let newAnnotationsPromise = Promise.resolve(null);
+    if (newAnnotationsByPage) {
+      const newAnnotations = newAnnotationsByPage.get(this.pageIndex);
+      if (newAnnotations) {
+        newAnnotationsPromise = AnnotationFactory.printNewAnnotations(
+          partialEvaluator,
+          task,
+          newAnnotations
+        );
+      }
+    }
     const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
     const pageListPromise = dataPromises.then(([contentStream]) => {
       const opList = new OperatorList(intent, sink);
@@ -369,63 +442,83 @@ class Page {
 
     // Fetch the page's annotations and add their operator lists to the
     // page's operator list to render them.
-    return Promise.all([pageListPromise, this._parsedAnnotations]).then(
-      function ([pageOpList, annotations]) {
-        if (
-          annotations.length === 0 ||
-          intent & RenderingIntentFlag.ANNOTATIONS_DISABLE
-        ) {
-          pageOpList.flush(true);
-          return { length: pageOpList.totalLength };
-        }
-        const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS),
-          intentAny = !!(intent & RenderingIntentFlag.ANY),
-          intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
-          intentPrint = !!(intent & RenderingIntentFlag.PRINT);
-
-        // Collect the operator list promises for the annotations. Each promise
-        // is resolved with the complete operator list for a single annotation.
-        const opListPromises = [];
-        for (const annotation of annotations) {
-          if (UNRENDERED_ANNOTATIONS.includes(annotation.data.subtype)) {
-            continue;
-          }
-          if (
-            intentAny ||
-            (intentDisplay && annotation.mustBeViewed(annotationStorage)) ||
-            (intentPrint && annotation.mustBePrinted(annotationStorage))
-          ) {
-            opListPromises.push(
-              annotation
-                .getOperatorList(
-                  partialEvaluator,
-                  task,
-                  intent,
-                  renderForms,
-                  annotationStorage
-                )
-                .catch(function (reason) {
-                  warn(
-                    "getOperatorList - ignoring annotation data during " +
-                      `"${task.name}" task: "${reason}".`
-                  );
-                  return null;
-                })
-            );
-          }
-        }
-
-        return Promise.all(opListPromises).then(function (opLists) {
-          pageOpList.addOp(OPS.beginAnnotations, []);
-          for (const opList of opLists) {
-            pageOpList.addOpList(opList);
-          }
-          pageOpList.addOp(OPS.endAnnotations, []);
-          pageOpList.flush(true);
-          return { length: pageOpList.totalLength };
-        });
+    return Promise.all([
+      pageListPromise,
+      this._parsedAnnotations,
+      newAnnotationsPromise,
+    ]).then(function ([pageOpList, annotations, newAnnotations]) {
+      if (newAnnotations) {
+        annotations = annotations.concat(newAnnotations);
       }
-    );
+      if (
+        annotations.length === 0 ||
+        intent & RenderingIntentFlag.ANNOTATIONS_DISABLE
+      ) {
+        pageOpList.flush(/* lastChunk = */ true);
+        return { length: pageOpList.totalLength };
+      }
+      const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS),
+        intentAny = !!(intent & RenderingIntentFlag.ANY),
+        intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
+        intentPrint = !!(intent & RenderingIntentFlag.PRINT);
+
+      // Collect the operator list promises for the annotations. Each promise
+      // is resolved with the complete operator list for a single annotation.
+      const opListPromises = [];
+      for (const annotation of annotations) {
+        if (UNRENDERED_ANNOTATIONS.includes(annotation.data.subtype)) {
+          continue;
+        }
+        if (
+          intentAny ||
+          (intentDisplay && annotation.mustBeViewed(annotationStorage)) ||
+          (intentPrint && annotation.mustBePrinted(annotationStorage))
+        ) {
+          opListPromises.push(
+            annotation
+              .getOperatorList(
+                partialEvaluator,
+                task,
+                intent,
+                renderForms,
+                annotationStorage
+              )
+              .catch(function (reason) {
+                warn(
+                  "getOperatorList - ignoring annotation data during " +
+                    `"${task.name}" task: "${reason}".`
+                );
+                return {
+                  opList: null,
+                  separateForm: false,
+                  separateCanvas: false,
+                };
+              })
+          );
+        }
+      }
+
+      return Promise.all(opListPromises).then(function (opLists) {
+        let form = false,
+          canvas = false;
+
+        for (const { opList, separateForm, separateCanvas } of opLists) {
+          pageOpList.addOpList(opList);
+
+          if (separateForm) {
+            form = separateForm;
+          }
+          if (separateCanvas) {
+            canvas = separateCanvas;
+          }
+        }
+        pageOpList.flush(
+          /* lastChunk = */ true,
+          /* separateAnnots = */ { form, canvas }
+        );
+        return { length: pageOpList.totalLength };
+      });
+    });
   }
 
   extractTextContent({
@@ -491,30 +584,56 @@ class Page {
     return tree;
   }
 
-  getAnnotationsData(intent) {
-    return this._parsedAnnotations.then(function (annotations) {
-      const annotationsData = [];
+  async getAnnotationsData(handler, task, intent) {
+    const annotations = await this._parsedAnnotations;
+    if (annotations.length === 0) {
+      return [];
+    }
 
-      if (annotations.length === 0) {
-        return annotationsData;
+    const textContentPromises = [];
+    const annotationsData = [];
+    let partialEvaluator;
+
+    const intentAny = !!(intent & RenderingIntentFlag.ANY),
+      intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
+      intentPrint = !!(intent & RenderingIntentFlag.PRINT);
+
+    for (const annotation of annotations) {
+      // Get the annotation even if it's hidden because
+      // JS can change its display.
+      const isVisible = intentAny || (intentDisplay && annotation.viewable);
+      if (isVisible || (intentPrint && annotation.printable)) {
+        annotationsData.push(annotation.data);
       }
-      const intentAny = !!(intent & RenderingIntentFlag.ANY),
-        intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
-        intentPrint = !!(intent & RenderingIntentFlag.PRINT);
 
-      for (const annotation of annotations) {
-        // Get the annotation even if it's hidden because
-        // JS can change its display.
-        if (
-          intentAny ||
-          (intentDisplay && annotation.viewable) ||
-          (intentPrint && annotation.printable)
-        ) {
-          annotationsData.push(annotation.data);
+      if (annotation.hasTextContent && isVisible) {
+        if (!partialEvaluator) {
+          partialEvaluator = new PartialEvaluator({
+            xref: this.xref,
+            handler,
+            pageIndex: this.pageIndex,
+            idFactory: this._localIdFactory,
+            fontCache: this.fontCache,
+            builtInCMapCache: this.builtInCMapCache,
+            standardFontDataCache: this.standardFontDataCache,
+            globalImageCache: this.globalImageCache,
+            options: this.evaluatorOptions,
+          });
         }
+        textContentPromises.push(
+          annotation
+            .extractTextContent(partialEvaluator, task, this.view)
+            .catch(function (reason) {
+              warn(
+                `getAnnotationsData - ignoring textContent during "${task.name}" task: "${reason}".`
+              );
+            })
+        );
       }
-      return annotationsData;
-    });
+    }
+
+    await Promise.all(textContentPromises);
+    return annotationsData;
   }
 
   get annotations() {
@@ -543,7 +662,32 @@ class Page {
         }
 
         return Promise.all(annotationPromises).then(function (annotations) {
-          return annotations.filter(annotation => !!annotation);
+          if (annotations.length === 0) {
+            return annotations;
+          }
+
+          const sortedAnnotations = [];
+          let popupAnnotations;
+          // Ensure that PopupAnnotations are handled last, since they depend on
+          // their parent Annotation in the display layer; fixes issue 11362.
+          for (const annotation of annotations) {
+            if (!annotation) {
+              continue;
+            }
+            if (annotation instanceof PopupAnnotation) {
+              if (!popupAnnotations) {
+                popupAnnotations = [];
+              }
+              popupAnnotations.push(annotation);
+              continue;
+            }
+            sortedAnnotations.push(annotation);
+          }
+          if (popupAnnotations) {
+            sortedAnnotations.push(...popupAnnotations);
+          }
+
+          return sortedAnnotations;
         });
       });
 
@@ -569,8 +713,6 @@ const ENDOBJ_SIGNATURE = new Uint8Array([0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a]);
 const FINGERPRINT_FIRST_BYTES = 1024;
 const EMPTY_FINGERPRINT =
   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-
-const PDF_HEADER_VERSION_REGEXP = /^[1-9]\.\d$/;
 
 function find(stream, signature, limit = 1024, backwards = false) {
   if (
@@ -676,14 +818,6 @@ class PDFDocument {
   parse(recoveryMode) {
     this.xref.parse(recoveryMode);
     this.catalog = new Catalog(this.pdfManager, this.xref);
-
-    // The `checkHeader` method is called before this method and parses the
-    // version from the header. The specification states in section 7.5.2
-    // that the version from the catalog, if present, should overwrite the
-    // version from the header.
-    if (this.catalog.version) {
-      this._version = this.catalog.version;
-    }
   }
 
   get linearization() {
@@ -758,19 +892,22 @@ class PDFDocument {
     }
     stream.moveStart();
 
+    // Skip over the "%PDF-" prefix, since it was found above.
+    stream.skip(PDF_HEADER_SIGNATURE.length);
     // Read the PDF format version.
-    const MAX_PDF_VERSION_LENGTH = 12;
     let version = "",
       ch;
-    while ((ch = stream.getByte()) > /* Space = */ 0x20) {
-      if (version.length >= MAX_PDF_VERSION_LENGTH) {
-        break;
-      }
+    while (
+      (ch = stream.getByte()) > /* Space = */ 0x20 &&
+      version.length < /* MAX_PDF_VERSION_LENGTH = */ 7
+    ) {
       version += String.fromCharCode(ch);
     }
-    if (!this._version) {
-      // Remove the "%PDF-" prefix.
-      this._version = version.substring(5);
+
+    if (PDF_VERSION_REGEXP.test(version)) {
+      this._version = version;
+    } else {
+      warn(`Invalid PDF header version: ${version}`);
     }
   }
 
@@ -994,7 +1131,7 @@ class PDFDocument {
     const pdfFonts = [];
     const initialState = {
       get font() {
-        return pdfFonts[pdfFonts.length - 1];
+        return pdfFonts.at(-1);
       },
       set font(font) {
         pdfFonts.push(font);
@@ -1118,6 +1255,14 @@ class PDFDocument {
       : null;
   }
 
+  /**
+   * The specification states in section 7.5.2 that the version from
+   * the catalog, if present, should overwrite the version from the header.
+   */
+  get version() {
+    return this.catalog.version || this._version;
+  }
+
   get formInfo() {
     const formInfo = {
       hasFields: false,
@@ -1165,17 +1310,8 @@ class PDFDocument {
   }
 
   get documentInfo() {
-    let version = this._version;
-    if (
-      typeof version !== "string" ||
-      !PDF_HEADER_VERSION_REGEXP.test(version)
-    ) {
-      warn(`Invalid PDF header version number: ${version}`);
-      version = null;
-    }
-
     const docInfo = {
-      PDFFormatVersion: version,
+      PDFFormatVersion: this.version,
       Language: this.catalog.lang,
       EncryptFilterName: this.xref.encrypt
         ? this.xref.encrypt.filterName
@@ -1269,8 +1405,8 @@ class PDFDocument {
 
     function hexString(hash) {
       const buf = [];
-      for (let i = 0, ii = hash.length; i < ii; i++) {
-        const hex = hash[i].toString(16);
+      for (const num of hash) {
+        const hex = num.toString(16);
         buf.push(hex.padStart(2, "0"));
       }
       return buf.join("");

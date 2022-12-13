@@ -15,7 +15,7 @@
 
 import { ScrollMode, SpreadMode } from "./ui_utils.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
-import { PagesCountLimit } from "./base_viewer.js";
+import { PagesCountLimit } from "./pdf_viewer.js";
 
 /**
  * @typedef {Object} SecondaryToolbarOptions
@@ -51,7 +51,7 @@ class SecondaryToolbar {
    * @param {SecondaryToolbarOptions} options
    * @param {EventBus} eventBus
    */
-  constructor(options, eventBus) {
+  constructor(options, eventBus, externalServices) {
     this.toolbar = options.toolbar;
     this.toggleButton = options.toggleButton;
     this.buttons = [
@@ -150,9 +150,8 @@ class SecondaryToolbar {
     };
 
     this.eventBus = eventBus;
+    this.externalServices = externalServices;
     this.opened = false;
-
-    this.reset();
 
     // Bind the event listeners for click, cursor tool, and scroll/spread mode
     // actions.
@@ -160,6 +159,8 @@ class SecondaryToolbar {
     this.#bindCursorToolsListener(options);
     this.#bindScrollModeListener(options);
     this.#bindSpreadModeListener(options);
+
+    this.reset();
   }
 
   /**
@@ -212,6 +213,10 @@ class SecondaryToolbar {
         if (close) {
           this.close();
         }
+        this.externalServices.reportTelemetry({
+          type: "buttons",
+          data: { id: element.id },
+        });
       });
     }
   }

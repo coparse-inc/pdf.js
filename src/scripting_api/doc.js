@@ -18,6 +18,8 @@ import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
 import { ZoomType } from "./constants.js";
 
+const DOC_EXTERNAL = false;
+
 class InfoProxyHandler {
   static get(obj, prop) {
     return obj[prop.toLowerCase()];
@@ -94,6 +96,9 @@ class Doc extends PDFObject {
     this._actions = createActionsMap(data.actions);
     this._globalEval = data.globalEval;
     this._pageActions = new Map();
+    this._userActivation = false;
+    this._disablePrinting = false;
+    this._disableSaving = false;
   }
 
   _dispatchDocEvent(name) {
@@ -106,12 +111,27 @@ class Doc extends PDFObject {
         "DidPrint",
         "OpenAction",
       ]);
+      // When a pdf has just been opened it doesn't really make sense
+      // to save it: it's up to the user to decide if they want to do that.
+      // A pdf can contain an action /FooBar which will trigger a save
+      // even if there are no WillSave/DidSave (which are themselves triggered
+      // after a save).
+      this._disableSaving = true;
       for (const actionName of this._actions.keys()) {
         if (!dontRun.has(actionName)) {
           this._runActions(actionName);
         }
       }
       this._runActions("OpenAction");
+      this._disableSaving = false;
+    } else if (name === "WillPrint") {
+      this._disablePrinting = true;
+      this._runActions(name);
+      this._disablePrinting = false;
+    } else if (name === "WillSave") {
+      this._disableSaving = true;
+      this._runActions(name);
+      this._disableSaving = false;
     } else {
       this._runActions(name);
     }
@@ -272,7 +292,10 @@ class Doc extends PDFObject {
   }
 
   get external() {
-    return true;
+    // According to the specification this should be `true` in non-Acrobat
+    // applications, however we ignore that to avoid bothering users with
+    // an `alert`-dialog on document load (see issue 15509).
+    return DOC_EXTERNAL;
   }
 
   set external(_) {
@@ -356,6 +379,11 @@ class Doc extends PDFObject {
   }
 
   set layout(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "string") {
       return;
     }
@@ -475,6 +503,11 @@ class Doc extends PDFObject {
   }
 
   set pageNum(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "number" || value < 0 || value >= this._numPages) {
       return;
     }
@@ -623,6 +656,11 @@ class Doc extends PDFObject {
   }
 
   set zoomType(type) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof type !== "string") {
       return;
     }
@@ -657,6 +695,11 @@ class Doc extends PDFObject {
   }
 
   set zoom(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "number" || value < 8.33 || value > 6400) {
       return;
     }
@@ -876,8 +919,26 @@ class Doc extends PDFObject {
     for (const [name, field] of this._fields.entries()) {
       if (name.startsWith(fieldName)) {
         const finalPart = name.slice(len);
-        if (finalPart.match(pattern)) {
+        if (pattern.test(finalPart)) {
           children.push(field);
+        }
+      }
+    }
+    return children;
+  }
+
+  _getTerminalChildren(fieldName) {
+    // Get all the descendants which have a value.
+    const children = [];
+    const len = fieldName.length;
+    for (const [name, field] of this._fields.entries()) {
+      if (name.startsWith(fieldName)) {
+        const finalPart = name.slice(len);
+        if (
+          field.obj._hasValue &&
+          (finalPart === "" || finalPart.startsWith("."))
+        ) {
+          children.push(field.wrapped);
         }
       }
     }
@@ -950,10 +1011,9 @@ class Doc extends PDFObject {
   }
 
   getPrintParams() {
-    if (!this._printParams) {
-      this._printParams = new PrintParams({ lastPage: this._numPages - 1 });
-    }
-    return this._printParams;
+    return (this._printParams ||= new PrintParams({
+      lastPage: this._numPages - 1,
+    }));
   }
 
   getSound() {
@@ -1035,6 +1095,11 @@ class Doc extends PDFObject {
     bAnnotations = true,
     printParams = null
   ) {
+    if (this._disablePrinting || !this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (bUI && typeof bUI === "object") {
       nStart = bUI.nStart;
       nEnd = bUI.nEnd;
@@ -1151,6 +1216,7 @@ class Doc extends PDFObject {
       field.obj.value = field.obj.defaultValue;
       this._send({
         id: field.obj._id,
+        siblings: field.obj._siblings,
         value: field.obj.defaultValue,
         formattedValue: null,
         selRange: [0, 0],

@@ -76,9 +76,7 @@ const DIACRITICS_EXCEPTION = new Set([
   // https://www.compart.com/fr/unicode/combining/132
   0x0f74,
 ]);
-const DIACRITICS_EXCEPTION_STR = [...DIACRITICS_EXCEPTION.values()]
-  .map(x => String.fromCharCode(x))
-  .join("");
+let DIACRITICS_EXCEPTION_STR; // Lazily initialized, see below.
 
 const DIACRITICS_REG_EXP = /\p{M}+/gu;
 const SPECIAL_CHARS_REG_EXP =
@@ -94,6 +92,8 @@ const SYLLABLES_LENGTHS = new Map();
 // with one of the chars in this regexp.
 const FIRST_CHAR_SYLLABLES_REG_EXP =
   "[\\u1100-\\u1112\\ud7a4-\\ud7af\\ud84a\\ud84c\\ud850\\ud854\\ud857\\ud85f]";
+
+const NFKC_CHARS_TO_NORMALIZE = new Map();
 
 let noSyllablesRegExp = null;
 let withSyllablesRegExp = null;
@@ -126,7 +126,17 @@ function normalize(text) {
   } else {
     // Compile the regular expression for text normalization once.
     const replace = Object.keys(CHARACTERS_TO_NORMALIZE).join("");
-    const regexp = `([${replace}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\n)`;
+    const toNormalizeWithNFKC =
+      "\u2460-\u2473" + // Circled numbers.
+      "\u24b6-\u24ff" + // Circled letters/numbers.
+      "\u3244-\u32bf" + // Circled ideograms/numbers.
+      "\u32d0-\u32fe" + // Circled ideograms.
+      "\uff00-\uffef"; // Halfwidth, fullwidth forms.
+
+    // 3040-309F: Hiragana
+    // 30A0-30FF: Katakana
+    const CJK = "(?:\\p{Ideographic}|[\u3040-\u30FF])";
+    const regexp = `([${replace}])|([${toNormalizeWithNFKC}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(${CJK}\\n)|(\\n)`;
 
     if (syllablePositions.length === 0) {
       // Most of the syllables belong to Hangul so there are no need
@@ -188,11 +198,11 @@ function normalize(text) {
 
   normalized = normalized.replace(
     normalizationRegex,
-    (match, p1, p2, p3, p4, p5, i) => {
+    (match, p1, p2, p3, p4, p5, p6, p7, i) => {
       i -= shiftOrigin;
       if (p1) {
         // Maybe fractions or quotations mark...
-        const replacement = CHARACTERS_TO_NORMALIZE[match];
+        const replacement = CHARACTERS_TO_NORMALIZE[p1];
         const jj = replacement.length;
         for (let j = 1; j < jj; j++) {
           positions.push([i - shift + j, shift - j]);
@@ -202,8 +212,23 @@ function normalize(text) {
       }
 
       if (p2) {
-        const hasTrailingDashEOL = p2.endsWith("\n");
-        const len = hasTrailingDashEOL ? p2.length - 2 : p2.length;
+        // Use the NFKC representation to normalize the char.
+        let replacement = NFKC_CHARS_TO_NORMALIZE.get(p2);
+        if (!replacement) {
+          replacement = p2.normalize("NFKC");
+          NFKC_CHARS_TO_NORMALIZE.set(p2, replacement);
+        }
+        const jj = replacement.length;
+        for (let j = 1; j < jj; j++) {
+          positions.push([i - shift + j, shift - j]);
+        }
+        shift -= jj - 1;
+        return replacement;
+      }
+
+      if (p3) {
+        const hasTrailingDashEOL = p3.endsWith("\n");
+        const len = hasTrailingDashEOL ? p3.length - 2 : p3.length;
 
         // Diacritics.
         hasDiacritics = true;
@@ -223,19 +248,19 @@ function normalize(text) {
 
         if (hasTrailingDashEOL) {
           // Diacritics are followed by a -\n.
-          // See comments in `if (p3)` block.
+          // See comments in `if (p4)` block.
           i += len - 1;
           positions.push([i - shift + 1, 1 + shift]);
           shift += 1;
           shiftOrigin += 1;
           eol += 1;
-          return p2.slice(0, len);
+          return p3.slice(0, len);
         }
 
-        return p2;
+        return p3;
       }
 
-      if (p3) {
+      if (p4) {
         // "X-\n" is removed because an hyphen at the end of a line
         // with not a space before is likely here to mark a break
         // in a word.
@@ -244,10 +269,19 @@ function normalize(text) {
         shift += 1;
         shiftOrigin += 1;
         eol += 1;
-        return p3.charAt(0);
+        return p4.charAt(0);
       }
 
-      if (p4) {
+      if (p5) {
+        // An ideographic at the end of a line doesn't imply adding an extra
+        // white space.
+        positions.push([i - shift + 1, shift]);
+        shiftOrigin += 1;
+        eol += 1;
+        return p5.charAt(0);
+      }
+
+      if (p6) {
         // eol is replaced by space: "foo\nbar" is likely equivalent to
         // "foo bar".
         positions.push([i - shift + 1, shift - 1]);
@@ -257,7 +291,7 @@ function normalize(text) {
         return " ";
       }
 
-      // p5
+      // p7
       if (i + eol === syllablePositions[syllableIndex]?.[1]) {
         // A syllable (1 char) is replaced with several chars (n) so
         // newCharsLen = n - 1.
@@ -269,7 +303,7 @@ function normalize(text) {
         shift -= newCharLen;
         shiftOrigin += newCharLen;
       }
-      return p5;
+      return p7;
     }
   );
 
@@ -643,6 +677,10 @@ class PDFFindController {
     if (matchDiacritics) {
       // aX must not match aXY.
       if (hasDiacritics) {
+        DIACRITICS_EXCEPTION_STR ||= String.fromCharCode(
+          ...DIACRITICS_EXCEPTION
+        );
+
         isUnicode = true;
         query = `${query}(?=[${DIACRITICS_EXCEPTION_STR}]|[^\\p{M}]|$)`;
       }

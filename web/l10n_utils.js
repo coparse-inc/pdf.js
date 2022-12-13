@@ -38,12 +38,6 @@ const DEFAULT_L10N_STRINGS = {
   document_properties_linearized_yes: "Yes",
   document_properties_linearized_no: "No",
 
-  print_progress_percent: "{{progress}}%",
-
-  "toggle_sidebar.title": "Toggle Sidebar",
-  "toggle_sidebar_notification2.title":
-    "Toggle Sidebar (document contains outline/attachments/layers)",
-
   additional_layers: "Additional Layers",
   page_landmark: "Page {{page}}",
   thumb_page_title: "Page {{page}}",
@@ -57,13 +51,6 @@ const DEFAULT_L10N_STRINGS = {
   "find_match_count_limit[other]": "More than {{limit}} matches",
   find_not_found: "Phrase not found",
 
-  error_version_info: "PDF.js v{{version}} (build: {{build}})",
-  error_message: "Message: {{message}}",
-  error_stack: "Stack: {{stack}}",
-  error_file: "File: {{file}}",
-  error_line: "Line: {{line}}",
-  rendering_error: "An error occurred while rendering the page.",
-
   page_scale_width: "Page Width",
   page_scale_fit: "Page Fit",
   page_scale_auto: "Automatic Zoom",
@@ -75,13 +62,22 @@ const DEFAULT_L10N_STRINGS = {
   invalid_file_error: "Invalid or corrupted PDF file.",
   missing_file_error: "Missing PDF file.",
   unexpected_response_error: "Unexpected server response.",
+  rendering_error: "An error occurred while rendering the page.",
 
   printing_not_supported:
     "Warning: Printing is not fully supported by this browser.",
   printing_not_ready: "Warning: The PDF is not fully loaded for printing.",
   web_fonts_disabled:
     "Web fonts are disabled: unable to use embedded PDF fonts.",
+
+  free_text2_default_content: "Start typing…",
+  editor_free_text2_aria_label: "Text Editor",
+  editor_ink2_aria_label: "Draw Editor",
+  editor_ink_canvas_aria_label: "User-created image",
 };
+if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
+  DEFAULT_L10N_STRINGS.print_progress_percent = "{{progress}}%";
+}
 
 function getL10nFallback(key, args) {
   switch (key) {

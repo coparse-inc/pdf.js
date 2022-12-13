@@ -354,7 +354,7 @@ class SimpleExprParser {
           return [tok, this.getNode()];
         case TOKEN.leftParen:
           if (this.last === OPERAND) {
-            const lastOperand = this.operands[this.operands.length - 1];
+            const lastOperand = this.operands.at(-1);
             if (!(lastOperand instanceof AstIdentifier)) {
               return [tok, this.getNode()];
             }
@@ -525,7 +525,7 @@ class SimpleExprParser {
 
   flushWithOperator(op) {
     while (true) {
-      const top = this.operators[this.operators.length - 1];
+      const top = this.operators.at(-1);
       if (top) {
         if (top.id >= 0 && SimpleExprParser.checkPrecedence(top, op)) {
           this.operators.pop();
@@ -661,14 +661,14 @@ class AstBinaryOperator extends Leaf {
   }
 
   isDotExpression() {
-    return Operators.id.dot <= this.id && this.id <= Operators.id.dotHash;
+    return Operators.dot.id <= this.id && this.id <= Operators.dotHash.id;
   }
 
   isSomPredicate() {
     return (
       this.isDotExpression() ||
-      (Operators.id.lt <= this.id &&
-        this.id <= Operators.id.or &&
+      (Operators.lt.id <= this.id &&
+        this.id <= Operators.or.id &&
         ((this.left.isDotExpression() && this.right.isConstant()) ||
           (this.left.isConstant() && this.right.isDotExpression()) ||
           (this.left.isDotExpression() && this.right.isDotExpression())))

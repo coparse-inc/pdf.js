@@ -42,18 +42,34 @@ class XRef {
     this._cacheMap = new Map(); // Prepare the XRef cache.
     this._pendingRefs = new RefSet();
     this.stats = new DocStats(pdfManager.msgHandler);
-    this._newRefNum = null;
+    this._newPersistentRefNum = null;
+    this._newTemporaryRefNum = null;
   }
 
-  getNewRef() {
-    if (this._newRefNum === null) {
-      this._newRefNum = this.entries.length;
+  getNewPersistentRef(obj) {
+    // When printing we don't care that much about the ref number by itself, it
+    // can increase for ever and it allows to keep some re-usable refs.
+    if (this._newPersistentRefNum === null) {
+      this._newPersistentRefNum = this.entries.length || 1;
     }
-    return Ref.get(this._newRefNum++, 0);
+    const num = this._newPersistentRefNum++;
+    this._cacheMap.set(num, obj);
+    return Ref.get(num, 0);
   }
 
-  resetNewRef() {
-    this._newRefNum = null;
+  getNewTemporaryRef() {
+    // When saving we want to have some minimal numbers.
+    // Those refs are only created in order to be written in the final pdf
+    // stream.
+    if (this._newTemporaryRefNum === null) {
+      this._newTemporaryRefNum = this.entries.length || 1;
+    }
+    return Ref.get(this._newTemporaryRefNum++, 0);
+  }
+
+  resetNewTemporaryRef() {
+    // Called once saving is finished.
+    this._newTemporaryRefNum = null;
   }
 
   setStartXRef(startXRef) {
@@ -503,7 +519,7 @@ class XRef {
         // Find the next "obj" string, rather than "endobj", to ensure that
         // we won't skip over a new 'obj' operator in corrupt files where
         // 'endobj' operators are missing (fixes issue9105_reduced.pdf).
-        while (startPos < buffer.length) {
+        while (startPos < length) {
           const endPos = startPos + skipUntil(buffer, startPos, objBytes) + 4;
           contentLength = endPos - position;
 
@@ -545,20 +561,49 @@ class XRef {
         (token.length === 7 || /\s/.test(token[7]))
       ) {
         trailers.push(position);
-        position += skipUntil(buffer, position, startxrefBytes);
+
+        const contentLength = skipUntil(buffer, position, startxrefBytes);
+        // Attempt to handle (some) corrupt documents, where no 'startxref'
+        // operators are present (fixes issue15590.pdf).
+        if (position + contentLength >= length) {
+          const endPos = position + skipUntil(buffer, position, objBytes) + 4;
+
+          const checkPos = Math.max(endPos - CHECK_CONTENT_LENGTH, position);
+          const tokenStr = bytesToString(buffer.subarray(checkPos, endPos));
+
+          // Find the first "obj" occurrence after the 'trailer' operator.
+          const objToken = nestedObjRegExp.exec(tokenStr);
+
+          if (objToken && objToken[1]) {
+            warn(
+              'indexObjects: Found first "obj" after "trailer", ' +
+                'caused by missing "startxref" -- trying to recover.'
+            );
+            position = endPos - objToken[1].length;
+            continue;
+          }
+        }
+        position += contentLength;
       } else {
         position += token.length + 1;
       }
     }
     // reading XRef streams
-    for (let i = 0, ii = xrefStms.length; i < ii; ++i) {
-      this.startXRefQueue.push(xrefStms[i]);
+    for (const xrefStm of xrefStms) {
+      this.startXRefQueue.push(xrefStm);
       this.readXRef(/* recoveryMode */ true);
     }
     // finding main trailer
-    let trailerDict;
-    for (let i = 0, ii = trailers.length; i < ii; ++i) {
-      stream.pos = trailers[i];
+    let trailerDict, trailerError;
+    for (const trailer of [...trailers, "generationFallback", ...trailers]) {
+      if (trailer === "generationFallback") {
+        if (!trailerError) {
+          break; // No need to fallback if there were no validation errors.
+        }
+        this._generationFallback = true;
+        continue;
+      }
+      stream.pos = trailer;
       const parser = new Parser({
         lexer: new Lexer(stream),
         xref: this,
@@ -575,6 +620,7 @@ class XRef {
         continue;
       }
       // Do some basic validation of the trailer/root dictionary candidate.
+      let validPagesDict = false;
       try {
         const rootDict = dict.get("Root");
         if (!(rootDict instanceof Dict)) {
@@ -585,15 +631,16 @@ class XRef {
           continue;
         }
         const pagesCount = pagesDict.get("Count");
-        if (!Number.isInteger(pagesCount)) {
-          continue;
+        if (Number.isInteger(pagesCount)) {
+          validPagesDict = true;
         }
         // The top-level /Pages dictionary isn't obviously corrupt.
       } catch (ex) {
+        trailerError = ex;
         continue;
       }
       // taking the first one with 'ID'
-      if (dict.has("ID")) {
+      if (validPagesDict && dict.has("ID")) {
         return dict;
       }
       // The current dictionary is a candidate, but continue searching.
@@ -780,7 +827,17 @@ class XRef {
     const gen = ref.gen;
     let num = ref.num;
     if (xrefEntry.gen !== gen) {
-      throw new XRefEntryException(`Inconsistent generation in XRef: ${ref}`);
+      const msg = `Inconsistent generation in XRef: ${ref}`;
+      // Try falling back to a *previous* generation (fixes issue15577.pdf).
+      if (this._generationFallback && xrefEntry.gen < gen) {
+        warn(msg);
+        return this.fetchUncompressed(
+          Ref.get(num, xrefEntry.gen),
+          xrefEntry,
+          suppressEncryption
+        );
+      }
+      throw new XRefEntryException(msg);
     }
     const stream = this.stream.makeSubStream(
       xrefEntry.offset + this.stream.start

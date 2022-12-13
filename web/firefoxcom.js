@@ -38,7 +38,7 @@ class FirefoxCom {
    */
   static requestSync(action, data) {
     const request = document.createTextNode("");
-    document.documentElement.appendChild(request);
+    document.documentElement.append(request);
 
     const sender = document.createEvent("CustomEvent");
     sender.initCustomEvent("pdf.js.message", true, false, {
@@ -86,7 +86,7 @@ class FirefoxCom {
         { once: true }
       );
     }
-    document.documentElement.appendChild(request);
+    document.documentElement.append(request);
 
     const sender = document.createEvent("CustomEvent");
     sender.initCustomEvent("pdf.js.message", true, false, {
@@ -100,9 +100,7 @@ class FirefoxCom {
 }
 
 class DownloadManager {
-  constructor() {
-    this._openBlobUrls = new WeakMap();
-  }
+  #openBlobUrls = new WeakMap();
 
   downloadUrl(url, filename) {
     FirefoxCom.request("download", {
@@ -132,10 +130,10 @@ class DownloadManager {
     const contentType = isPdfData ? "application/pdf" : "";
 
     if (isPdfData) {
-      let blobUrl = this._openBlobUrls.get(element);
+      let blobUrl = this.#openBlobUrls.get(element);
       if (!blobUrl) {
         blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-        this._openBlobUrls.set(element, blobUrl);
+        this.#openBlobUrls.set(element, blobUrl);
       }
       // Let Firefox's content handler catch the URL and display the PDF.
       const viewerUrl = blobUrl + "#filename=" + encodeURIComponent(filename);
@@ -148,7 +146,7 @@ class DownloadManager {
         // Release the `blobUrl`, since opening it failed, and fallback to
         // downloading the PDF file.
         URL.revokeObjectURL(blobUrl);
-        this._openBlobUrls.delete(element);
+        this.#openBlobUrls.delete(element);
       }
     }
 
@@ -271,6 +269,20 @@ class MozL10n {
   window.addEventListener("save", handleEvent);
 })();
 
+(function listenEditingEvent() {
+  const handleEvent = function ({ detail }) {
+    if (!PDFViewerApplication.initialized) {
+      return;
+    }
+    PDFViewerApplication.eventBus.dispatch("editingaction", {
+      source: window,
+      name: detail.name,
+    });
+  };
+
+  window.addEventListener("editingaction", handleEvent);
+})();
+
 class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
   requestDataRange(begin, end) {
     FirefoxCom.request("requestDataRange", { begin, end });
@@ -376,12 +388,16 @@ class FirefoxExternalServices extends DefaultExternalServices {
     FirefoxCom.request("reportTelemetry", JSON.stringify(data));
   }
 
-  static createDownloadManager(options) {
+  static createDownloadManager() {
     return new DownloadManager();
   }
 
   static createPreferences() {
     return new FirefoxPreferences();
+  }
+
+  static updateEditorStates(data) {
+    FirefoxCom.request("updateEditorStates", data);
   }
 
   static createL10n(options) {

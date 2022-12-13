@@ -1014,7 +1014,7 @@ class AESBaseCipher {
     let outputLength = 16 * result.length;
     if (finalize) {
       // undo a padding that is described in RFC 2898
-      const lastBlock = result[result.length - 1];
+      const lastBlock = result.at(-1);
       let psLen = lastBlock[15];
       if (psLen <= 16) {
         for (let i = 15, ii = 16 - psLen; i >= ii; --i) {
@@ -1284,7 +1284,7 @@ const PDF20 = (function PDF20Closure() {
     let k = calculateSHA256(input, 0, input.length).subarray(0, 32);
     let e = [0];
     let i = 0;
-    while (i < 64 || e[e.length - 1] > i - 32) {
+    while (i < 64 || e.at(-1) > i - 32) {
       const combinedLength = password.length + k.length + userBytes.length,
         combinedArray = new Uint8Array(combinedLength);
       let writeOffset = 0;
@@ -1304,15 +1304,11 @@ const PDF20 = (function PDF20Closure() {
       e = cipher.encrypt(k1, k.subarray(16, 32));
       // Now we have to take the first 16 bytes of an unsigned big endian
       // integer and compute the remainder modulo 3. That is a fairly large
-      // number and JavaScript isn't going to handle that well, so we're using
-      // a trick that allows us to perform modulo math byte by byte.
-      let remainder = 0;
-      for (let z = 0; z < 16; z++) {
-        remainder *= 256 % 3;
-        remainder %= 3;
-        remainder += (e[z] >>> 0) % 3;
-        remainder %= 3;
-      }
+      // number and JavaScript isn't going to handle that well.
+      // The number is e0 + 256 * e1 + 256^2 * e2... and 256 % 3 === 1, hence
+      // the powers of 256 are === 1 modulo 3 and finally the number modulo 3
+      // is equal to the remainder modulo 3 of the sum of the e_n.
+      const remainder = e.slice(0, 16).reduce((a, b) => a + b, 0) % 3;
       if (remainder === 0) {
         k = calculateSHA256(e, 0, e.length);
       } else if (remainder === 1) {
@@ -1857,14 +1853,14 @@ const CipherTransformFactory = (function CipherTransformFactoryClosure() {
         return new CipherTransform(
           buildCipherConstructor(
             this.cf,
-            this.stmf,
+            this.strf,
             num,
             gen,
             this.encryptionKey
           ),
           buildCipherConstructor(
             this.cf,
-            this.strf,
+            this.stmf,
             num,
             gen,
             this.encryptionKey

@@ -35,12 +35,28 @@ import {
   PDFLinkService,
   SimpleLinkService,
 } from "./pdf_link_service.js";
+import {
+  parseQueryString,
+  ProgressBar,
+  RenderingStates,
+  ScrollMode,
+  SpreadMode,
+} from "./ui_utils.js";
+import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
+import { DownloadManager } from "./download_manager.js";
+import { EventBus } from "./event_utils.js";
+import { GenericL10n } from "./genericl10n.js";
+import { NullL10n } from "./l10n_utils.js";
+import { PDFFindController } from "./pdf_find_controller.js";
+import { PDFHistory } from "./pdf_history.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFSinglePageViewer, PDFViewer } from "./pdf_viewer.js";
+import { PDFSinglePageViewer } from "./pdf_single_page_viewer.js";
+import { PDFViewer } from "./pdf_viewer.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
@@ -73,7 +89,10 @@ export {
   PDFSinglePageViewer,
   PDFViewer,
   ProgressBar,
+  RenderingStates,
+  ScrollMode,
   SimpleLinkService,
+  SpreadMode,
   StructTreeLayerBuilder,
   TextLayerBuilder,
   TextHighlighter,

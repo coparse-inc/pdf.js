@@ -19,6 +19,7 @@ import {
   ScrollMode,
   SpreadMode,
 } from "./ui_utils.js";
+import { AnnotationEditorType } from "pdfjs-lib";
 
 const DELAY_BEFORE_HIDING_CONTROLS = 3000; // in ms
 const ACTIVE_SELECTOR = "pdfPresentationMode";
@@ -79,6 +80,7 @@ class PDFPresentationMode {
       scaleValue: pdfViewer.currentScaleValue,
       scrollMode: pdfViewer.scrollMode,
       spreadMode: null,
+      annotationEditorMode: null,
     };
 
     if (
@@ -91,9 +93,13 @@ class PDFPresentationMode {
       );
       this.#args.spreadMode = pdfViewer.spreadMode;
     }
+    if (pdfViewer.annotationEditorMode !== AnnotationEditorType.DISABLE) {
+      this.#args.annotationEditorMode = pdfViewer.annotationEditorMode;
+    }
 
     try {
       await promise;
+      pdfViewer.focus(); // Fixes bug 1787456.
       return true;
     } catch (reason) {
       this.#removeFullscreenChangeListeners();
@@ -167,6 +173,10 @@ class PDFPresentationMode {
       }
       this.pdfViewer.currentPageNumber = this.#args.pageNumber;
       this.pdfViewer.currentScaleValue = "page-fit";
+
+      if (this.#args.annotationEditorMode !== null) {
+        this.pdfViewer.annotationEditorMode = AnnotationEditorType.NONE;
+      }
     }, 0);
 
     this.#addWindowListeners();
@@ -195,6 +205,10 @@ class PDFPresentationMode {
       }
       this.pdfViewer.currentScaleValue = this.#args.scaleValue;
       this.pdfViewer.currentPageNumber = pageNumber;
+
+      if (this.#args.annotationEditorMode !== null) {
+        this.pdfViewer.annotationEditorMode = this.#args.annotationEditorMode;
+      }
       this.#args = null;
     }, 0);
 
@@ -210,21 +224,24 @@ class PDFPresentationMode {
       evt.preventDefault();
       return;
     }
-    if (evt.button === 0) {
-      // Enable clicking of links in presentation mode. Note: only links
-      // pointing to destinations in the current PDF document work.
-      const isInternalLink =
-        evt.target.href && evt.target.classList.contains("internalLink");
-      if (!isInternalLink) {
-        // Unless an internal link was clicked, advance one page.
-        evt.preventDefault();
+    if (evt.button !== 0) {
+      return;
+    }
+    // Enable clicking of links in presentation mode. Note: only links
+    // pointing to destinations in the current PDF document work.
+    if (
+      evt.target.href &&
+      evt.target.parentNode?.hasAttribute("data-internal-link")
+    ) {
+      return;
+    }
+    // Unless an internal link was clicked, advance one page.
+    evt.preventDefault();
 
-        if (evt.shiftKey) {
-          this.pdfViewer.previousPage();
-        } else {
-          this.pdfViewer.nextPage();
-        }
-      }
+    if (evt.shiftKey) {
+      this.pdfViewer.previousPage();
+    } else {
+      this.pdfViewer.nextPage();
     }
   }
 

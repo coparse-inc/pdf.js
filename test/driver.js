@@ -14,8 +14,6 @@
  */
 /* globals pdfjsLib, pdfjsViewer */
 
-"use strict";
-
 const {
   AnnotationLayer,
   AnnotationMode,
@@ -27,13 +25,16 @@ const {
   shadow,
   XfaLayer,
 } = pdfjsLib;
-const { parseQueryString, SimpleLinkService } = pdfjsViewer;
+const { GenericL10n, NullL10n, parseQueryString, SimpleLinkService } =
+  pdfjsViewer;
 
 const WAITING_TIME = 100; // ms
 const CMAP_URL = "/build/generic/web/cmaps/";
 const CMAP_PACKED = true;
 const STANDARD_FONT_DATA_URL = "/build/generic/web/standard_fonts/";
 const IMAGE_RESOURCES_PATH = "/web/images/";
+const VIEWER_CSS = "../build/components/pdf_viewer.css";
+const VIEWER_LOCALE = "en-US";
 const WORKER_SRC = "../build/generic/build/pdf.worker.js";
 const RENDER_TASK_ON_CONTINUE_DELAY = 5; // ms
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -160,23 +161,17 @@ class Rasterize {
    * styles are inserted via XHR. Therefore, we load and combine them here.
    */
   static get annotationStylePromise() {
-    const styles = [
-      "../web/annotation_layer_builder.css",
-      "./annotation_layer_builder_overrides.css",
-    ];
+    const styles = [VIEWER_CSS, "./annotation_layer_builder_overrides.css"];
     return shadow(this, "annotationStylePromise", loadStyles(styles));
   }
 
   static get textStylePromise() {
-    const styles = ["./text_layer_test.css"];
+    const styles = [VIEWER_CSS, "./text_layer_test.css"];
     return shadow(this, "textStylePromise", loadStyles(styles));
   }
 
   static get xfaStylePromise() {
-    const styles = [
-      "../web/xfa_layer_builder.css",
-      "./xfa_layer_builder_overrides.css",
-    ];
+    const styles = [VIEWER_CSS, "./xfa_layer_builder_overrides.css"];
     return shadow(this, "xfaStylePromise", loadStyles(styles));
   }
 
@@ -192,10 +187,10 @@ class Rasterize {
     foreignObject.setAttribute("height", `${viewport.height}px`);
 
     const style = document.createElement("style");
-    foreignObject.appendChild(style);
+    foreignObject.append(style);
 
     const div = document.createElement("div");
-    foreignObject.appendChild(div);
+    foreignObject.append(div);
 
     return { svg, foreignObject, style, div };
   }
@@ -208,14 +203,17 @@ class Rasterize {
     annotationCanvasMap,
     page,
     imageResourcesPath,
-    renderForms = false
+    renderForms = false,
+    l10n = NullL10n
   ) {
     try {
       const { svg, foreignObject, style, div } = this.createContainer(viewport);
       div.className = "annotationLayer";
 
       const [common, overrides] = await this.annotationStylePromise;
-      style.textContent = `${common}\n${overrides}`;
+      style.textContent =
+        `${common}\n${overrides}\n` +
+        `:root { --scale-factor: ${viewport.scale} }`;
 
       const annotationViewport = viewport.clone({ dontFlip: true });
       const annotationImageMap = await convertCanvasesToImages(
@@ -235,11 +233,12 @@ class Rasterize {
         annotationCanvasMap: annotationImageMap,
       };
       AnnotationLayer.render(parameters);
+      await l10n.translate(div);
 
       // Inline SVG images from text annotations.
       await inlineImages(div);
-      foreignObject.appendChild(div);
-      svg.appendChild(foreignObject);
+      foreignObject.append(div);
+      svg.append(foreignObject);
 
       await writeSVG(svg, ctx);
     } catch (reason) {
@@ -247,7 +246,7 @@ class Rasterize {
     }
   }
 
-  static async textLayer(ctx, viewport, textContent, enhanceTextSelection) {
+  static async textLayer(ctx, viewport, textContent) {
     try {
       const { svg, foreignObject, style, div } = this.createContainer(viewport);
       div.className = "textLayer";
@@ -255,20 +254,20 @@ class Rasterize {
       // Items are transformed to have 1px font size.
       svg.setAttribute("font-size", 1);
 
-      const [cssRules] = await this.textStylePromise;
-      style.textContent = cssRules;
+      const [common, overrides] = await this.textStylePromise;
+      style.textContent =
+        `${common}\n${overrides}\n` +
+        `:root { --scale-factor: ${viewport.scale} }`;
 
       // Rendering text layer as HTML.
       const task = renderTextLayer({
-        textContent,
+        textContentSource: textContent,
         container: div,
         viewport,
-        enhanceTextSelection,
       });
-      await task.promise;
 
-      task.expandTextDivs(true);
-      svg.appendChild(foreignObject);
+      await task.promise;
+      svg.append(foreignObject);
 
       await writeSVG(svg, ctx);
     } catch (reason) {
@@ -288,7 +287,7 @@ class Rasterize {
       const { svg, foreignObject, style, div } = this.createContainer(viewport);
 
       const [common, overrides] = await this.xfaStylePromise;
-      style.textContent = `${fontRules}\n${common}\n${overrides}`;
+      style.textContent = `${common}\n${overrides}\n${fontRules}`;
 
       // Rendering XFA layer as HTML.
       XfaLayer.render({
@@ -302,7 +301,7 @@ class Rasterize {
 
       // Some unsupported type of images (e.g. tiff) lead to errors.
       await inlineImages(div, /* silentErrors = */ true);
-      svg.appendChild(foreignObject);
+      svg.append(foreignObject);
 
       await writeSVG(svg, ctx);
     } catch (reason) {
@@ -321,7 +320,6 @@ class Rasterize {
  * @property {HTMLDivElement} end - Container for a completion message.
  */
 
-// eslint-disable-next-line no-unused-vars
 class Driver {
   /**
    * @param {DriverOptions} options
@@ -329,6 +327,8 @@ class Driver {
   constructor(options) {
     // Configure the global worker options.
     GlobalWorkerOptions.workerSrc = WORKER_SRC;
+
+    this._l10n = new GenericL10n(VIEWER_LOCALE);
 
     // Set the passed options
     this.inflight = options.inflight;
@@ -468,7 +468,7 @@ class Driver {
           xfaStyleElement = document.createElement("style");
           document.documentElement
             .getElementsByTagName("head")[0]
-            .appendChild(xfaStyleElement);
+            .append(xfaStyleElement);
         }
 
         const loadingTask = getDocument({
@@ -485,7 +485,30 @@ class Driver {
           enableXfa: task.enableXfa,
           styleElement: xfaStyleElement,
         });
-        loadingTask.promise.then(
+        let promise = loadingTask.promise;
+
+        if (task.save) {
+          if (!task.annotationStorage) {
+            promise = Promise.reject(
+              new Error("Missing `annotationStorage` entry.")
+            );
+          } else {
+            promise = loadingTask.promise.then(async doc => {
+              for (const [key, value] of Object.entries(
+                task.annotationStorage
+              )) {
+                doc.annotationStorage.setValue(key, value);
+              }
+              const data = await doc.saveDocument();
+              await loadingTask.destroy();
+              delete task.annotationStorage;
+
+              return getDocument(data).promise;
+            });
+          }
+        }
+
+        promise.then(
           async doc => {
             if (task.enableXfa) {
               task.fontRules = "";
@@ -559,11 +582,7 @@ class Driver {
     if (!task.pdfDoc) {
       return task.firstPage || 1;
     }
-    let lastPageNumber = task.lastPage || 0;
-    if (!lastPageNumber || lastPageNumber > task.pdfDoc.numPages) {
-      lastPageNumber = task.pdfDoc.numPages;
-    }
-    return lastPageNumber;
+    return task.lastPage || task.pdfDoc.numPages;
   }
 
   _nextPage(task, loadError) {
@@ -677,7 +696,6 @@ class Driver {
                 textLayerCanvas.height
               );
               textLayerContext.scale(outputScale, outputScale);
-              const enhanceText = !!task.enhance;
               // The text builder will draw its content on the test canvas
               initPromise = page
                 .getTextContent({
@@ -687,8 +705,7 @@ class Driver {
                   return Rasterize.textLayer(
                     textLayerContext,
                     viewport,
-                    textContent,
-                    enhanceText
+                    textContent
                   );
                 });
             } else {
@@ -783,7 +800,7 @@ class Driver {
               this._snapshot(task, error);
             };
             initPromise
-              .then(function (data) {
+              .then(data => {
                 const renderTask = page.render(renderContext);
 
                 if (task.renderTaskOnContinue) {
@@ -792,7 +809,7 @@ class Driver {
                     setTimeout(cont, RENDER_TASK_ON_CONTINUE_DELAY);
                   };
                 }
-                return renderTask.promise.then(function () {
+                return renderTask.promise.then(() => {
                   if (annotationCanvasMap) {
                     Rasterize.annotationLayer(
                       annotationLayerContext,
@@ -802,7 +819,8 @@ class Driver {
                       annotationCanvasMap,
                       page,
                       IMAGE_RESOURCES_PATH,
-                      renderForms
+                      renderForms,
+                      this._l10n
                     ).then(() => {
                       completeRender(false);
                     });
@@ -941,3 +959,5 @@ class Driver {
     return capability.promise;
   }
 }
+
+export { Driver };

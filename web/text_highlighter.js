@@ -95,6 +95,7 @@ class TextHighlighter {
       );
       this._onUpdateTextLayerMatches = null;
     }
+    this._updateMatches(/* reset = */ true);
   }
 
   _convertMatches(matches, matchesLength) {
@@ -176,8 +177,8 @@ class TextHighlighter {
       let div = textDivs[divIdx];
       if (div.nodeType === Node.TEXT_NODE) {
         const span = document.createElement("span");
-        div.parentNode.insertBefore(span, div);
-        span.appendChild(div);
+        div.before(span);
+        span.append(div);
         textDivs[divIdx] = span;
         div = span;
       }
@@ -189,11 +190,11 @@ class TextHighlighter {
       if (className) {
         const span = document.createElement("span");
         span.className = `${className} appended`;
-        span.appendChild(node);
-        div.appendChild(span);
+        span.append(node);
+        div.append(span);
         return className.includes("selected") ? span.offsetLeft : 0;
       }
-      div.appendChild(node);
+      div.append(node);
       return 0;
     }
 
@@ -264,8 +265,8 @@ class TextHighlighter {
     }
   }
 
-  _updateMatches() {
-    if (!this.enabled) {
+  _updateMatches(reset = false) {
+    if (!this.enabled && !reset) {
       return;
     }
     const { findController, matches, pageIdx } = this;
@@ -273,8 +274,7 @@ class TextHighlighter {
     let clearedUntilDivIdx = -1;
 
     // Clear all current matches.
-    for (let i = 0, ii = matches.length; i < ii; i++) {
-      const match = matches[i];
+    for (const match of matches) {
       const begin = Math.max(clearedUntilDivIdx, match.begin.divIdx);
       for (let n = begin, end = match.end.divIdx; n <= end; n++) {
         const div = textDivs[n];
@@ -284,7 +284,7 @@ class TextHighlighter {
       clearedUntilDivIdx = match.end.divIdx + 1;
     }
 
-    if (!findController?.highlightMatches) {
+    if (!findController?.highlightMatches || reset) {
       return;
     }
     // Convert the matches on the `findController` into the match format

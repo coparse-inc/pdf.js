@@ -19,9 +19,17 @@ import {
   BaseStandardFontDataFactory,
   BaseSVGFactory,
 } from "./base_factory.js";
-import { BaseException, stringToBytes, Util, warn } from "../shared/util.js";
+import {
+  BaseException,
+  shadow,
+  stringToBytes,
+  Util,
+  warn,
+} from "../shared/util.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
+
+const AnnotationPrefix = "pdfjs_internal_id_";
 
 class PixelsPerInch {
   static CSS = 96.0;
@@ -222,13 +230,13 @@ class PageViewport {
     if (rotateA === 0) {
       offsetCanvasX = Math.abs(centerY - viewBox[1]) * scale + offsetX;
       offsetCanvasY = Math.abs(centerX - viewBox[0]) * scale + offsetY;
-      width = Math.abs(viewBox[3] - viewBox[1]) * scale;
-      height = Math.abs(viewBox[2] - viewBox[0]) * scale;
+      width = (viewBox[3] - viewBox[1]) * scale;
+      height = (viewBox[2] - viewBox[0]) * scale;
     } else {
       offsetCanvasX = Math.abs(centerX - viewBox[0]) * scale + offsetX;
       offsetCanvasY = Math.abs(centerY - viewBox[1]) * scale + offsetY;
-      width = Math.abs(viewBox[2] - viewBox[0]) * scale;
-      height = Math.abs(viewBox[3] - viewBox[1]) * scale;
+      width = (viewBox[2] - viewBox[0]) * scale;
+      height = (viewBox[3] - viewBox[1]) * scale;
     }
     // creating transform for the following operations:
     // translate(-centerX, -centerY), rotate and flip vertically,
@@ -244,6 +252,20 @@ class PageViewport {
 
     this.width = width;
     this.height = height;
+  }
+
+  /**
+   * The original, un-scaled, viewport dimensions.
+   * @type {Object}
+   */
+  get rawDims() {
+    const { viewBox } = this;
+    return shadow(this, "rawDims", {
+      pageWidth: viewBox[2] - viewBox[0],
+      pageHeight: viewBox[3] - viewBox[1],
+      pageX: viewBox[0],
+      pageY: viewBox[1],
+    });
   }
 
   /**
@@ -332,16 +354,14 @@ function isPdfFile(filename) {
 /**
  * Gets the filename from a given URL.
  * @param {string} url
+ * @param {boolean} [onlyStripPath]
  * @returns {string}
  */
-function getFilenameFromUrl(url) {
-  const anchor = url.indexOf("#");
-  const query = url.indexOf("?");
-  const end = Math.min(
-    anchor > 0 ? anchor : url.length,
-    query > 0 ? query : url.length
-  );
-  return url.substring(url.lastIndexOf("/", end) + 1, end);
+function getFilenameFromUrl(url, onlyStripPath = false) {
+  if (!onlyStripPath) {
+    [url] = url.split(/[#?]/, 1);
+  }
+  return url.substring(url.lastIndexOf("/") + 1);
 }
 
 /**
@@ -387,10 +407,9 @@ function getPdfFilenameFromUrl(url, defaultFilename = "document.pdf") {
 }
 
 class StatTimer {
-  constructor() {
-    this.started = Object.create(null);
-    this.times = [];
-  }
+  started = Object.create(null);
+
+  times = [];
 
   time(name) {
     if (name in this.started) {
@@ -416,15 +435,11 @@ class StatTimer {
     // Find the longest name for padding purposes.
     const outBuf = [];
     let longest = 0;
-    for (const time of this.times) {
-      const name = time.name;
-      if (name.length > longest) {
-        longest = name.length;
-      }
+    for (const { name } of this.times) {
+      longest = Math.max(name.length, longest);
     }
-    for (const time of this.times) {
-      const duration = time.end - time.start;
-      outBuf.push(`${time.name.padEnd(longest)} ${duration}ms\n`);
+    for (const { name, start, end } of this.times) {
+      outBuf.push(`${name.padEnd(longest)} ${end - start}ms\n`);
     }
     return outBuf.join("");
   }
@@ -459,7 +474,7 @@ function loadScript(src, removeScriptElement = false) {
     script.onerror = function () {
       reject(new Error(`Cannot load script at: ${script.src}`));
     };
-    (document.head || document.documentElement).appendChild(script);
+    (document.head || document.documentElement).append(script);
   });
 }
 
@@ -567,14 +582,110 @@ function getXfaPageViewport(xfaPage, { scale = 1, rotation = 0 }) {
   });
 }
 
+function getRGB(color) {
+  if (color.startsWith("#")) {
+    const colorRGB = parseInt(color.slice(1), 16);
+    return [
+      (colorRGB & 0xff0000) >> 16,
+      (colorRGB & 0x00ff00) >> 8,
+      colorRGB & 0x0000ff,
+    ];
+  }
+
+  if (color.startsWith("rgb(")) {
+    // getComputedStyle(...).color returns a `rgb(R, G, B)` color.
+    return color
+      .slice(/* "rgb(".length */ 4, -1) // Strip out "rgb(" and ")".
+      .split(",")
+      .map(x => parseInt(x));
+  }
+
+  if (color.startsWith("rgba(")) {
+    return color
+      .slice(/* "rgba(".length */ 5, -1) // Strip out "rgba(" and ")".
+      .split(",")
+      .map(x => parseInt(x))
+      .slice(0, 3);
+  }
+
+  warn(`Not a valid color format: "${color}"`);
+  return [0, 0, 0];
+}
+
+function getColorValues(colors) {
+  const span = document.createElement("span");
+  span.style.visibility = "hidden";
+  document.body.append(span);
+  for (const name of colors.keys()) {
+    span.style.color = name;
+    const computedColor = window.getComputedStyle(span).color;
+    colors.set(name, getRGB(computedColor));
+  }
+  span.remove();
+}
+
+function getCurrentTransform(ctx) {
+  const { a, b, c, d, e, f } = ctx.getTransform();
+  return [a, b, c, d, e, f];
+}
+
+function getCurrentTransformInverse(ctx) {
+  const { a, b, c, d, e, f } = ctx.getTransform().invertSelf();
+  return [a, b, c, d, e, f];
+}
+
+/**
+ * @param {HTMLDivElement} div
+ * @param {PageViewport} viewport
+ * @param {boolean} mustFlip
+ * @param {boolean} mustRotate
+ */
+function setLayerDimensions(
+  div,
+  viewport,
+  mustFlip = false,
+  mustRotate = true
+) {
+  if (viewport instanceof PageViewport) {
+    const { pageWidth, pageHeight } = viewport.rawDims;
+    const { style } = div;
+
+    // TODO: Investigate if it could be interesting to use the css round
+    // function (https://developer.mozilla.org/en-US/docs/Web/CSS/round):
+    // const widthStr =
+    //   `round(down, var(--scale-factor) * ${pageWidth}px, 1px)`;
+    // const heightStr =
+    //   `round(down, var(--scale-factor) * ${pageHeight}px, 1px)`;
+    const widthStr = `calc(var(--scale-factor) * ${pageWidth}px)`;
+    const heightStr = `calc(var(--scale-factor) * ${pageHeight}px)`;
+
+    if (!mustFlip || viewport.rotation % 180 === 0) {
+      style.width = widthStr;
+      style.height = heightStr;
+    } else {
+      style.width = heightStr;
+      style.height = widthStr;
+    }
+  }
+
+  if (mustRotate) {
+    div.setAttribute("data-main-rotation", viewport.rotation);
+  }
+}
+
 export {
+  AnnotationPrefix,
   deprecated,
   DOMCanvasFactory,
   DOMCMapReaderFactory,
   DOMStandardFontDataFactory,
   DOMSVGFactory,
+  getColorValues,
+  getCurrentTransform,
+  getCurrentTransformInverse,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
+  getRGB,
   getXfaPageViewport,
   isDataScheme,
   isPdfFile,
@@ -584,5 +695,6 @@ export {
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
+  setLayerDimensions,
   StatTimer,
 };

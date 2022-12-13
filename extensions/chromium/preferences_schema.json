@@ -102,19 +102,13 @@
       "type": "boolean",
       "default": false
     },
-    "enhanceTextSelection": {
-      "description": "DEPRECATED. Set textLayerMode to 2 to use the enhanced text selection layer by default.",
-      "type": "boolean",
-      "default": false
-    },
     "textLayerMode": {
       "title": "Text layer mode",
-      "description": "Controls if the text layer is enabled, and the selection mode that is used.\n 0 = Disabled.\n 1 = Enabled.\n 2 = (Experimental) Enabled, with enhanced text selection.",
+      "description": "Controls if the text layer is enabled, and the selection mode that is used.\n 0 = Disabled.\n 1 = Enabled.",
       "type": "integer",
       "enum": [
         0,
-        1,
-        2
+        1
       ],
       "default": 1
     },
@@ -159,6 +153,16 @@
         3
       ],
       "default": 2
+    },
+    "annotationEditorMode": {
+      "type": "integer",
+      "enum": [
+        -1,
+        0,
+        3,
+        15
+      ],
+      "default": 0
     },
     "enablePermissions": {
       "type": "boolean",
@@ -208,6 +212,11 @@
         2
       ],
       "default": -1
+    },
+    "forcePageColors": {
+      "description": "When enabled, the pdf rendering will use the high contrast mode colors",
+      "type": "boolean",
+      "default": false
     },
     "pageColorsBackground": {
       "description": "The color is a string as defined in CSS. Its goal is to help improve readability in high contrast mode",

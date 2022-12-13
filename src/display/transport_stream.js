@@ -92,22 +92,17 @@ class PDFDataTransportStream {
   _onProgress(evt) {
     if (evt.total === undefined) {
       // Reporting to first range reader, if it exists.
-      const firstReader = this._rangeReaders[0];
-      if (firstReader?.onProgress) {
-        firstReader.onProgress({ loaded: evt.loaded });
-      }
+      this._rangeReaders[0]?.onProgress?.({ loaded: evt.loaded });
     } else {
-      const fullReader = this._fullRequestReader;
-      if (fullReader?.onProgress) {
-        fullReader.onProgress({ loaded: evt.loaded, total: evt.total });
-      }
+      this._fullRequestReader?.onProgress?.({
+        loaded: evt.loaded,
+        total: evt.total,
+      });
     }
   }
 
   _onProgressiveDone() {
-    if (this._fullRequestReader) {
-      this._fullRequestReader.progressiveDone();
-    }
+    this._fullRequestReader?.progressiveDone();
     this._progressiveDone = true;
   }
 
@@ -144,9 +139,8 @@ class PDFDataTransportStream {
   }
 
   cancelAllRequests(reason) {
-    if (this._fullRequestReader) {
-      this._fullRequestReader.cancel(reason);
-    }
+    this._fullRequestReader?.cancel(reason);
+
     for (const reader of this._rangeReaders.slice(0)) {
       reader.cancel(reason);
     }

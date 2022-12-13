@@ -173,6 +173,13 @@ class PDFLinkService {
     this.pdfViewer.pagesRotation = value;
   }
 
+  /**
+   * @type {boolean}
+   */
+  get isInPresentationMode() {
+    return this.pdfViewer.isInPresentationMode;
+  }
+
   #goToDestinationHelper(rawDest, namedDest = null, explicitDest) {
     // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
     const destRef = explicitDest[0];
@@ -494,6 +501,48 @@ class PDFLinkService {
   }
 
   /**
+   * @param {Object} action
+   */
+  async executeSetOCGState(action) {
+    const pdfDocument = this.pdfDocument;
+    const optionalContentConfig = await this.pdfViewer
+      .optionalContentConfigPromise;
+
+    if (pdfDocument !== this.pdfDocument) {
+      return; // The document was closed while the optional content resolved.
+    }
+    let operator;
+
+    for (const elem of action.state) {
+      switch (elem) {
+        case "ON":
+        case "OFF":
+        case "Toggle":
+          operator = elem;
+          continue;
+      }
+      switch (operator) {
+        case "ON":
+          optionalContentConfig.setVisibility(elem, true);
+          break;
+        case "OFF":
+          optionalContentConfig.setVisibility(elem, false);
+          break;
+        case "Toggle":
+          const group = optionalContentConfig.getGroup(elem);
+          if (group) {
+            optionalContentConfig.setVisibility(elem, !group.visible);
+          }
+          break;
+      }
+    }
+
+    this.pdfViewer.optionalContentConfigPromise = Promise.resolve(
+      optionalContentConfig
+    );
+  }
+
+  /**
    * @param {number} pageNum - page number.
    * @param {Object} pageRef - reference to the page.
    */
@@ -629,6 +678,13 @@ class SimpleLinkService {
   set rotation(value) {}
 
   /**
+   * @type {boolean}
+   */
+  get isInPresentationMode() {
+    return false;
+  }
+
+  /**
    * @param {string|Array} dest - The named, or explicit, PDF destination.
    */
   async goToDestination(dest) {}
@@ -672,6 +728,11 @@ class SimpleLinkService {
    * @param {string} action
    */
   executeNamedAction(action) {}
+
+  /**
+   * @param {Object} action
+   */
+  executeSetOCGState(action) {}
 
   /**
    * @param {number} pageNum - page number.

@@ -626,4 +626,67 @@ describe("pdf_find_controller", function () {
       pageMatchesLength: [[8]],
     });
   });
+
+  it("performs a search in a text containing an ideographic at the end of a line", async function () {
+    const { eventBus, pdfFindController } = await initPdfFindController(
+      "issue15340.pdf"
+    );
+
+    await testSearch({
+      eventBus,
+      pdfFindController,
+      state: {
+        query: "検知機構",
+      },
+      matchesPerPage: [1],
+      selectedMatch: {
+        pageIndex: 0,
+        matchIndex: 0,
+      },
+      pageMatches: [[29]],
+      pageMatchesLength: [[4]],
+    });
+  });
+
+  it("performs a search in a text containing fullwidth chars", async function () {
+    const { eventBus, pdfFindController } = await initPdfFindController(
+      "issue15690.pdf"
+    );
+
+    await testSearch({
+      eventBus,
+      pdfFindController,
+      state: {
+        query: "o",
+      },
+      matchesPerPage: [13],
+      selectedMatch: {
+        pageIndex: 0,
+        matchIndex: 0,
+      },
+      pageMatches: [[0, 10, 13, 30, 39, 41, 55, 60, 66, 84, 102, 117, 134]],
+      pageMatchesLength: [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+    });
+  });
+
+  it("performs a search in a text with some Katakana at the end of a line", async function () {
+    const { eventBus, pdfFindController } = await initPdfFindController(
+      "issue15759.pdf"
+    );
+
+    await testSearch({
+      eventBus,
+      pdfFindController,
+      state: {
+        query: "ソレノイド",
+      },
+      matchesPerPage: [1],
+      selectedMatch: {
+        pageIndex: 0,
+        matchIndex: 0,
+      },
+      pageMatches: [[6]],
+      pageMatchesLength: [[5]],
+    });
+  });
 });

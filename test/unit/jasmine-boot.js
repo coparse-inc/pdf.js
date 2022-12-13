@@ -54,7 +54,6 @@ async function initializePDFJS(callback) {
       "pdfjs-test/unit/annotation_spec.js",
       "pdfjs-test/unit/annotation_storage_spec.js",
       "pdfjs-test/unit/api_spec.js",
-      "pdfjs-test/unit/base_viewer_spec.js",
       "pdfjs-test/unit/bidi_spec.js",
       "pdfjs-test/unit/cff_parser_spec.js",
       "pdfjs-test/unit/cmap_spec.js",
@@ -66,6 +65,7 @@ async function initializePDFJS(callback) {
       "pdfjs-test/unit/display_svg_spec.js",
       "pdfjs-test/unit/display_utils_spec.js",
       "pdfjs-test/unit/document_spec.js",
+      "pdfjs-test/unit/editor_spec.js",
       "pdfjs-test/unit/encodings_spec.js",
       "pdfjs-test/unit/evaluator_spec.js",
       "pdfjs-test/unit/event_utils_spec.js",
@@ -80,10 +80,12 @@ async function initializePDFJS(callback) {
       "pdfjs-test/unit/pdf_find_controller_spec.js",
       "pdfjs-test/unit/pdf_find_utils_spec.js",
       "pdfjs-test/unit/pdf_history_spec.js",
+      "pdfjs-test/unit/pdf_viewer_spec.js",
       "pdfjs-test/unit/primitives_spec.js",
       "pdfjs-test/unit/scripting_spec.js",
       "pdfjs-test/unit/stream_spec.js",
       "pdfjs-test/unit/struct_tree_spec.js",
+      "pdfjs-test/unit/text_layer_spec.js",
       "pdfjs-test/unit/type1_parser_spec.js",
       "pdfjs-test/unit/ui_utils_spec.js",
       "pdfjs-test/unit/unicode_spec.js",
@@ -165,10 +167,10 @@ async function initializePDFJS(callback) {
       return document.body;
     },
     createElement() {
-      return document.createElement.apply(document, arguments);
+      return document.createElement(...arguments);
     },
     createTextNode() {
-      return document.createTextNode.apply(document, arguments);
+      return document.createTextNode(...arguments);
     },
     timer: new jasmine.Timer(),
   });

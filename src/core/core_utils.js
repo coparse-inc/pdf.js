@@ -14,6 +14,7 @@
  */
 
 import {
+  AnnotationEditorPrefix,
   assert,
   BaseException,
   FontType,
@@ -24,6 +25,8 @@ import {
 } from "../shared/util.js";
 import { Dict, isName, Ref, RefSet } from "./primitives.js";
 import { BaseStream } from "./base_stream.js";
+
+const PDF_VERSION_REGEXP = /^[1-9]\.\d$/;
 
 function getLookupTableFactory(initializer) {
   let lookup;
@@ -310,6 +313,19 @@ function escapePDFName(str) {
   return buffer.join("");
 }
 
+// Replace "(", ")", "\n", "\r" and "\" by "\(", "\)", "\\n", "\\r" and "\\"
+// in order to write it in a PDF file.
+function escapeString(str) {
+  return str.replace(/([()\\\n\r])/g, match => {
+    if (match === "\n") {
+      return "\\n";
+    } else if (match === "\r") {
+      return "\\r";
+    }
+    return `\\${match}`;
+  });
+}
+
 function _collectJS(entry, xref, list, parents) {
   if (!entry) {
     return;
@@ -338,7 +354,7 @@ function _collectJS(entry, xref, list, parents) {
       } else if (typeof js === "string") {
         code = js;
       }
-      code = code && stringToPDFString(code);
+      code = code && stringToPDFString(code).replace(/\u0000/g, "");
       if (code) {
         list.push(code);
       }
@@ -548,24 +564,96 @@ function numberToString(value) {
   return value.toFixed(2);
 }
 
+function getNewAnnotationsMap(annotationStorage) {
+  if (!annotationStorage) {
+    return null;
+  }
+  const newAnnotationsByPage = new Map();
+  // The concept of page in a XFA is very different, so
+  // editing is just not implemented.
+  for (const [key, value] of annotationStorage) {
+    if (!key.startsWith(AnnotationEditorPrefix)) {
+      continue;
+    }
+    let annotations = newAnnotationsByPage.get(value.pageIndex);
+    if (!annotations) {
+      annotations = [];
+      newAnnotationsByPage.set(value.pageIndex, annotations);
+    }
+    annotations.push(value);
+  }
+  return newAnnotationsByPage.size > 0 ? newAnnotationsByPage : null;
+}
+
+function isAscii(str) {
+  return /^[\x00-\x7F]*$/.test(str);
+}
+
+function stringToUTF16HexString(str) {
+  const buf = [];
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    const char = str.charCodeAt(i);
+    buf.push(
+      ((char >> 8) & 0xff).toString(16).padStart(2, "0"),
+      (char & 0xff).toString(16).padStart(2, "0")
+    );
+  }
+  return buf.join("");
+}
+
+function stringToUTF16String(str, bigEndian = false) {
+  const buf = [];
+  if (bigEndian) {
+    buf.push("\xFE\xFF");
+  }
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    const char = str.charCodeAt(i);
+    buf.push(
+      String.fromCharCode((char >> 8) & 0xff),
+      String.fromCharCode(char & 0xff)
+    );
+  }
+  return buf.join("");
+}
+
+function getRotationMatrix(rotation, width, height) {
+  switch (rotation) {
+    case 90:
+      return [0, 1, -1, 0, width, 0];
+    case 180:
+      return [-1, 0, 0, -1, width, height];
+    case 270:
+      return [0, -1, 1, 0, 0, height];
+    default:
+      throw new Error("Invalid rotation");
+  }
+}
+
 export {
   collectActions,
   DocStats,
   encodeToXmlString,
   escapePDFName,
+  escapeString,
   getArrayLookupTableFactory,
   getInheritableProperty,
   getLookupTableFactory,
+  getNewAnnotationsMap,
+  getRotationMatrix,
+  isAscii,
   isWhiteSpace,
   log2,
   MissingDataException,
   numberToString,
   ParserEOFException,
   parseXFAPath,
+  PDF_VERSION_REGEXP,
   readInt8,
   readUint16,
   readUint32,
   recoverJsURL,
+  stringToUTF16HexString,
+  stringToUTF16String,
   toRomanNumerals,
   validateCSSFont,
   XRefEntryException,

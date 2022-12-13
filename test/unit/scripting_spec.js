@@ -120,6 +120,7 @@ describe("Scripting", function () {
       expect(send_queue.has(refId)).toEqual(true);
       expect(send_queue.get(refId)).toEqual({
         id: refId,
+        siblings: null,
         value: expected,
         formattedValue: null,
       });
@@ -199,7 +200,7 @@ describe("Scripting", function () {
       value = await myeval(
         `this.getField("A.B.C.D").getArray().map((x) => x.value)`
       );
-      expect(value).toEqual([5, 7]);
+      expect(value).toEqual([4, 5, 6, 7]);
     });
   });
 
@@ -279,6 +280,18 @@ describe("Scripting", function () {
           `util.printf("Decimal number: %,0.2f", -12.34567)`
         );
         expect(value).toEqual("Decimal number: -12.35");
+
+        value = await myeval(`util.printf("Decimal number: %,0.0f", 4.95)`);
+        expect(value).toEqual("Decimal number: 5");
+
+        value = await myeval(`util.printf("Decimal number: %,0.0f", 4.49)`);
+        expect(value).toEqual("Decimal number: 4");
+
+        value = await myeval(`util.printf("Decimal number: %,0.0f", -4.95)`);
+        expect(value).toEqual("Decimal number: -5");
+
+        value = await myeval(`util.printf("Decimal number: %,0.0f", -4.49)`);
+        expect(value).toEqual("Decimal number: -4");
       });
 
       it("should print a string with no argument", async () => {
@@ -333,7 +346,7 @@ describe("Scripting", function () {
       expect(send_queue.has(refId)).toEqual(true);
       expect(send_queue.get(refId)).toEqual({
         id: refId,
-        value: "123",
+        value: 123,
       });
     });
 
@@ -369,6 +382,7 @@ describe("Scripting", function () {
       expect(send_queue.has(refId)).toEqual(true);
       expect(send_queue.get(refId)).toEqual({
         id: refId,
+        siblings: null,
         value: "hell",
         selRange: [4, 4],
       });
@@ -406,6 +420,7 @@ describe("Scripting", function () {
       expect(send_queue.has(refId)).toEqual(true);
       expect(send_queue.get(refId)).toEqual({
         id: refId,
+        siblings: null,
         value: "hella",
         selRange: [5, 5],
       });
@@ -479,6 +494,7 @@ describe("Scripting", function () {
       expect(send_queue.has(refId1)).toEqual(true);
       expect(send_queue.get(refId1)).toEqual({
         id: refId1,
+        siblings: null,
         value: "world",
         formattedValue: null,
       });
@@ -604,14 +620,23 @@ describe("Scripting", function () {
       it("should parse a date with a format", async () => {
         const check = async (date, format, expected) => {
           const value = await myeval(
-            `AFParseDateEx("${date}", "${format}").toISOString()`
+            `AFParseDateEx("${date}", "${format}").toISOString().replace(/T.*$/, "")`
           );
-          expect(value).toEqual(new Date(expected).toISOString());
+          expect(value).toEqual(
+            new Date(expected).toISOString().replace(/T.*$/, "")
+          );
         };
 
         await check("05", "dd", "2000/01/05");
         await check("12", "mm", "2000/12/01");
         await check("2022", "yyyy", "2022/01/01");
+        await check("a1$9bbbb21", "dd/mm/yyyy", "2021/09/01");
+
+        // The following test isn't working as expected because
+        // the quickjs date parser has been replaced by the browser one
+        // and the date "1.9.2021" is valid in Chrome but not in Firefox.
+        // The supported date format is not specified...
+        // await check("1.9.2021", "dd/mm/yyyy", "2021/09/01");
       });
     });
 
@@ -800,7 +825,8 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
-          value: "123456.789",
+          siblings: null,
+          value: 123456.789,
           formattedValue: null,
         });
       });
@@ -979,7 +1005,8 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
-          value: "321",
+          siblings: null,
+          value: 321,
           formattedValue: null,
         });
       });
@@ -1020,9 +1047,9 @@ describe("Scripting", function () {
       });
     });
 
-    describe("ASSimple_Calculate", function () {
+    describe("AFSimple_Calculate", function () {
       it("should compute the sum of several fields", async () => {
-        const refIds = [0, 1, 2, 3].map(_ => getId());
+        const refIds = [0, 1, 2, 3, 4].map(_ => getId());
         const data = {
           objects: {
             field1: [
@@ -1055,7 +1082,19 @@ describe("Scripting", function () {
                 value: "",
                 actions: {
                   Calculate: [
-                    `AFSimple_Calculate("SUM", ["field1", "field2", "field3"]);`,
+                    `AFSimple_Calculate("SUM", ["field1", "field2", "field3", "unknown"]);`,
+                  ],
+                },
+                type: "text",
+              },
+            ],
+            field5: [
+              {
+                id: refIds[4],
+                value: "",
+                actions: {
+                  Calculate: [
+                    `AFSimple_Calculate("SUM", "field1, field2, field3, unknown");`,
                   ],
                 },
                 type: "text",
@@ -1063,7 +1102,7 @@ describe("Scripting", function () {
             ],
           },
           appInfo: { language: "en-US", platform: "Linux x86_64" },
-          calculationOrder: [refIds[3]],
+          calculationOrder: [refIds[3], refIds[4]],
           dispatchEventName: "_dispatchMe",
         };
 
@@ -1077,6 +1116,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refIds[3])).toEqual(true);
         expect(send_queue.get(refIds[3])).toEqual({
           id: refIds[3],
+          siblings: null,
           value: 1,
           formattedValue: null,
         });
@@ -1090,6 +1130,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refIds[3])).toEqual(true);
         expect(send_queue.get(refIds[3])).toEqual({
           id: refIds[3],
+          siblings: null,
           value: 3,
           formattedValue: null,
         });
@@ -1103,7 +1144,100 @@ describe("Scripting", function () {
         expect(send_queue.has(refIds[3])).toEqual(true);
         expect(send_queue.get(refIds[3])).toEqual({
           id: refIds[3],
+          siblings: null,
           value: 6,
+          formattedValue: null,
+        });
+
+        expect(send_queue.has(refIds[4])).toEqual(true);
+        expect(send_queue.get(refIds[4])).toEqual({
+          id: refIds[4],
+          siblings: null,
+          value: 6,
+          formattedValue: null,
+        });
+      });
+
+      it("should compute the sum of several fields in fields tree", async () => {
+        const refIds = [0, 1, 2, 3, 4, 5].map(_ => getId());
+        const data = {
+          objects: {
+            field1: [
+              {
+                id: refIds[0],
+                kidIds: [refIds[1], refIds[2]],
+              },
+            ],
+            "field1.field2": [
+              {
+                id: refIds[1],
+                kidIds: [refIds[3]],
+              },
+            ],
+            "field1.field3": [
+              {
+                id: refIds[2],
+                value: "",
+                actions: {},
+                type: "text",
+              },
+            ],
+            "field1.field2.field4": [
+              {
+                id: refIds[3],
+                kidIds: [refIds[4]],
+              },
+            ],
+            "field1.field2.field4.field5": [
+              {
+                id: refIds[4],
+                value: "",
+                actions: {},
+                type: "text",
+              },
+            ],
+            field6: [
+              {
+                id: refIds[5],
+                value: "",
+                actions: {
+                  Calculate: [`AFSimple_Calculate("SUM", "field1");`],
+                },
+                type: "text",
+              },
+            ],
+          },
+          appInfo: { language: "en-US", platform: "Linux x86_64" },
+          calculationOrder: [refIds[5]],
+          dispatchEventName: "_dispatchMe",
+        };
+
+        sandbox.createSandbox(data);
+        await sandbox.dispatchEventInSandbox({
+          id: refIds[2],
+          value: "123",
+          name: "Keystroke",
+          willCommit: true,
+        });
+        expect(send_queue.has(refIds[5])).toEqual(true);
+        expect(send_queue.get(refIds[5])).toEqual({
+          id: refIds[5],
+          siblings: null,
+          value: 123,
+          formattedValue: null,
+        });
+
+        await sandbox.dispatchEventInSandbox({
+          id: refIds[4],
+          value: "456",
+          name: "Keystroke",
+          willCommit: true,
+        });
+        expect(send_queue.has(refIds[5])).toEqual(true);
+        expect(send_queue.get(refIds[5])).toEqual({
+          id: refIds[5],
+          siblings: null,
+          value: 579,
           formattedValue: null,
         });
       });
@@ -1178,6 +1312,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
+          siblings: null,
           value: "3F?",
           selRange: [3, 3],
         });
@@ -1206,6 +1341,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
+          siblings: null,
           value: "3F?0",
           formattedValue: null,
         });
@@ -1266,6 +1402,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
+          siblings: null,
           value,
           selRange: [i, i],
         });
@@ -1326,6 +1463,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
+          siblings: null,
           value,
           selRange: [i, i],
         });
@@ -1386,6 +1524,7 @@ describe("Scripting", function () {
         expect(send_queue.has(refId)).toEqual(true);
         expect(send_queue.get(refId)).toEqual({
           id: refId,
+          siblings: null,
           value,
           selRange: [i, i],
         });
@@ -1404,6 +1543,22 @@ describe("Scripting", function () {
 
         value = await myeval(`eMailValidate("foo bar")`);
         expect(value).toEqual(false);
+      });
+    });
+
+    describe("AFExactMatch", function () {
+      it("should check matching between regexs and a string", async () => {
+        let value = await myeval(`AFExactMatch(/\\d+/, "123")`);
+        expect(value).toEqual(true);
+
+        value = await myeval(`AFExactMatch(/\\d+/, "foo")`);
+        expect(value).toEqual(0);
+
+        value = await myeval(`AFExactMatch([/\\d+/, /[fo]*/], "foo")`);
+        expect(value).toEqual(2);
+
+        value = await myeval(`AFExactMatch([/\\d+/, /[fo]*/], "bar")`);
+        expect(value).toEqual(0);
       });
     });
   });

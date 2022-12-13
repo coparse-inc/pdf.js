@@ -15,23 +15,21 @@
 
 // eslint-disable-next-line max-len
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("../src/display/api").TextContent} TextContent */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
-
-import { renderTextLayer } from "pdfjs-lib";
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
+import { renderTextLayer, updateTextLayer } from "pdfjs-lib";
 
 const EXPAND_DIVS_TIMEOUT = 200; // ms
 
 /**
  * @typedef {Object} TextLayerBuilderOptions
- * @property {HTMLDivElement} textLayerDiv - The text layer container.
- * @property {EventBus} eventBus - The application event bus.
- * @property {number} pageIndex - The page index.
- * @property {PageViewport} viewport - The viewport of the text layer.
  * @property {TextHighlighter} highlighter - Optional object that will handle
  *   highlighting text from the find controller.
- * @property {boolean} enhanceTextSelection - Option to turn on improved
- *   text selection.
+ * @property {TextAccessibilityManager} [accessibilityManager]
+ * @property {boolean} [isOffscreenCanvasSupported] - Allows to use an
+ *   OffscreenCanvas if needed.
  */
 
 /**
@@ -40,30 +38,31 @@ const EXPAND_DIVS_TIMEOUT = 200; // ms
  * contain text that matches the PDF text they are overlaying.
  */
 class TextLayerBuilder {
+  #rotation = 0;
+
+  #scale = 0;
+
+  #textContentSource = null;
+
   constructor({
-    textLayerDiv,
-    eventBus,
-    pageIndex,
-    viewport,
     highlighter = null,
-    enhanceTextSelection = false,
+    accessibilityManager = null,
+    isOffscreenCanvasSupported = true,
   }) {
-    this.textLayerDiv = textLayerDiv;
-    this.eventBus = eventBus;
-    this.textContent = null;
     this.textContentItemsStr = [];
-    this.textContentStream = null;
     this.renderingDone = false;
-    this.pageNumber = pageIndex + 1;
-    this.viewport = viewport;
     this.textDivs = [];
+    this.textDivProperties = new WeakMap();
     this.textLayerRenderTask = null;
     this.highlighter = highlighter;
-    this.enhanceTextSelection = enhanceTextSelection;
+    this.accessibilityManager = accessibilityManager;
+    this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
 
     if (!enhanceTextSelection) {
       this._bindMouse();
     }
+    this.div = document.createElement("div");
+    this.div.className = "textLayer";
   }
 
   /**
@@ -73,55 +72,80 @@ class TextLayerBuilder {
     this.textLayerRenderTask.expandTextDivs(true);
     this.renderingDone = true;
 
-    if (!this.enhanceTextSelection) {
-      const endOfContent = document.createElement("div");
-      endOfContent.className = "endOfContent";
-      this.textLayerDiv.appendChild(endOfContent);
-    }
+    const endOfContent = document.createElement("div");
+    endOfContent.className = "endOfContent";
+    this.div.append(endOfContent);
 
-    this.eventBus.dispatch("textlayerrendered", {
-      source: this,
-      pageNumber: this.pageNumber,
-      numTextDivs: this.textDivs.length,
-    });
+    this.#bindMouse();
+  }
+
+  get numTextDivs() {
+    return this.textDivs.length;
   }
 
   /**
    * Renders the text layer.
-   *
-   * @param {number} [timeout] - Wait for a specified amount of milliseconds
-   *                             before rendering.
+   * @param {PageViewport} viewport
    */
-  render(timeout = 0) {
-    if (!(this.textContent || this.textContentStream) || this.renderingDone) {
+  async render(viewport) {
+    if (!this.#textContentSource) {
+      throw new Error('No "textContentSource" parameter specified.');
+    }
+
+    const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
+    if (this.renderingDone) {
+      const { rotation } = viewport;
+      const mustRotate = rotation !== this.#rotation;
+      const mustRescale = scale !== this.#scale;
+      if (mustRotate || mustRescale) {
+        this.hide();
+        updateTextLayer({
+          container: this.div,
+          viewport,
+          textDivs: this.textDivs,
+          textDivProperties: this.textDivProperties,
+          isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
+          mustRescale,
+          mustRotate,
+        });
+        this.show();
+        this.#scale = scale;
+        this.#rotation = rotation;
+      }
       return;
     }
+
     this.cancel();
-
-    this.textDivs.length = 0;
     this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
+    this.accessibilityManager?.setTextMapping(this.textDivs);
 
-    const textLayerFrag = document.createDocumentFragment();
     this.textLayerRenderTask = renderTextLayer({
-      textContent: this.textContent,
-      textContentStream: this.textContentStream,
-      container: textLayerFrag,
-      viewport: this.viewport,
+      textContentSource: this.#textContentSource,
+      container: this.div,
+      viewport,
       textDivs: this.textDivs,
+      textDivProperties: this.textDivProperties,
       textContentItemsStr: this.textContentItemsStr,
-      timeout,
-      enhanceTextSelection: this.enhanceTextSelection,
+      isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
     });
-    this.textLayerRenderTask.promise.then(
-      () => {
-        this.textLayerDiv.appendChild(textLayerFrag);
-        this._finishRendering();
-        this.highlighter?.enable();
-      },
-      function (reason) {
-        // Cancelled or failed to render text layer; skipping errors.
-      }
-    );
+
+    await this.textLayerRenderTask.promise;
+    this._finishRendering();
+    this.#scale = scale;
+    this.accessibilityManager?.enable();
+    this.show();
+  }
+
+  hide() {
+    // We turn off the highlighter in order to avoid to scroll into view an
+    // element of the text layer which could be hidden.
+    this.highlighter?.disable();
+    this.div.hidden = true;
+  }
+
+  show() {
+    this.div.hidden = false;
+    this.highlighter?.enable();
   }
 
   /**
@@ -133,42 +157,29 @@ class TextLayerBuilder {
       this.textLayerRenderTask = null;
     }
     this.highlighter?.disable();
+    this.accessibilityManager?.disable();
+    this.textContentItemsStr.length = 0;
+    this.textDivs.length = 0;
+    this.textDivProperties = new WeakMap();
   }
 
-  setTextContentStream(readableStream) {
+  /**
+   * @param {ReadableStream | TextContent} source
+   */
+  setTextContentSource(source) {
     this.cancel();
-    this.textContentStream = readableStream;
-  }
-
-  setTextContent(textContent) {
-    this.cancel();
-    this.textContent = textContent;
+    this.#textContentSource = source;
   }
 
   /**
    * Improves text selection by adding an additional div where the mouse was
    * clicked. This reduces flickering of the content if the mouse is slowly
    * dragged up or down.
-   *
-   * @private
    */
-  _bindMouse() {
-    const div = this.textLayerDiv;
-    let expandDivsTimer = null;
+  #bindMouse() {
+    const { div } = this;
 
     div.addEventListener("mousedown", evt => {
-      if (this.enhanceTextSelection && this.textLayerRenderTask) {
-        this.textLayerRenderTask.expandTextDivs(true);
-        if (
-          (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) &&
-          expandDivsTimer
-        ) {
-          clearTimeout(expandDivsTimer);
-          expandDivsTimer = null;
-        }
-        return;
-      }
-
       const end = div.querySelector(".endOfContent");
       if (!end) {
         return;
@@ -180,11 +191,9 @@ class TextLayerBuilder {
         // However it does not work when selection is started on empty space.
         let adjustTop = evt.target !== div;
         if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-          adjustTop =
-            adjustTop &&
-            window
-              .getComputedStyle(end)
-              .getPropertyValue("-moz-user-select") !== "none";
+          adjustTop &&=
+            getComputedStyle(end).getPropertyValue("-moz-user-select") !==
+            "none";
         }
         if (adjustTop) {
           const divBounds = div.getBoundingClientRect();
