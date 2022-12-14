@@ -65,8 +65,8 @@ import { TextAccessibilityManager } from "./text_accessibility.js";
  * @property {Promise<OptionalContentConfig>} [optionalContentConfigPromise] -
  *   A promise that is resolved with an {@link OptionalContentConfig} instance.
  *   The default value is `null`.
- * @property {PDFRenderingQueue} [renderingQueue] - The rendering queue object.
- * @property {IPDFTextLayerFactory} [textLayerFactory]
+ * @property {?PDFRenderingQueue} [renderingQueue] - The rendering queue object.
+ * @property {?IPDFTextLayerFactory} [textLayerFactory]
  * @property {number} [textLayerMode] - Controls if the text layer used for
  *   selection and searching is created. The constants from {TextLayerMode}
  *   should be used. The default value is `TextLayerMode.ENABLE`.
