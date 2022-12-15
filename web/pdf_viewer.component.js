@@ -38,12 +38,12 @@ import {
 import {
   parseQueryString,
   ProgressBar,
-  PDFRenderingQueue,
   RenderingStates,
   ScrollMode,
   SpreadMode,
 } from "./ui_utils.js";
 import { PDFPageView } from "./pdf_page_view.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
