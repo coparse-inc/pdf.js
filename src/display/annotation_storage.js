@@ -21,7 +21,7 @@ import { MurmurHash3_64 } from "../shared/murmurhash3.js";
  * Key/value storage for annotation data in forms.
  */
 class AnnotationStorage {
-  #modified = false;
+  _modified = false;
 
   #storage = new Map();
 
@@ -129,8 +129,8 @@ class AnnotationStorage {
   }
 
   #setModified() {
-    if (!this.#modified) {
-      this.#modified = true;
+    if (!this._modified) {
+      this._modified = true;
       if (typeof this.onSetModified === "function") {
         this.onSetModified();
       }
@@ -138,8 +138,8 @@ class AnnotationStorage {
   }
 
   resetModified() {
-    if (this.#modified) {
-      this.#modified = false;
+    if (this._modified) {
+      this._modified = false;
       if (typeof this.onResetModified === "function") {
         this.onResetModified();
       }
