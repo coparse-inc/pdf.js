@@ -169,6 +169,7 @@ class IPDFTextLayerFactory {
    * @typedef {Object} CreateTextLayerBuilderParameters
    * @property {TextHighlighter} highlighter
    * @property {TextAccessibilityManager} [accessibilityManager]
+   * @property {boolean} [enhanceTextSelection]
    * @property {boolean} [isOffscreenCanvasSupported]
    */
 
@@ -180,6 +181,7 @@ class IPDFTextLayerFactory {
     highlighter,
     accessibilityManager,
     isOffscreenCanvasSupported,
+    enhanceTextSelection = false,
   }) {}
 }
 

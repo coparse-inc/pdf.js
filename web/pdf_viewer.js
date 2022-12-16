@@ -112,8 +112,9 @@ function isValidAnnotationEditorMode(mode) {
  * @property {boolean} [removePageBorders] - Removes the border shadow around
  *   the pages. The default value is `false`.
  * @property {number} [textLayerMode] - Controls if the text layer used for
- *   selection and searching is created. The constants from {TextLayerMode}
- *   should be used. The default value is `TextLayerMode.ENABLE`.
+ *   selection and searching is created, and if the improved text selection
+ *   behaviour is enabled. The constants from {TextLayerMode} should be used.
+ *   The default value is `TextLayerMode.ENABLE`.
  * @property {number} [annotationMode] - Controls if the annotation layer is
  *   created, and if interactive form elements or `AnnotationStorage`-data are
  *   being rendered. The constants from {@link AnnotationMode} should be used;
@@ -1674,6 +1675,7 @@ class PDFViewer {
    * @typedef {Object} CreateTextLayerBuilderParameters
    * @property {TextHighlighter} highlighter
    * @property {TextAccessibilityManager} [accessibilityManager]
+   * @property {boolean} [enhanceTextSelection]
    * @property {boolean} [isOffscreenCanvasSupported]
    */
 
@@ -1685,11 +1687,15 @@ class PDFViewer {
     highlighter,
     accessibilityManager = null,
     isOffscreenCanvasSupported = true,
+    enhanceTextSelection = false,
   }) {
     return new TextLayerBuilder({
       highlighter,
       accessibilityManager,
       isOffscreenCanvasSupported,
+      enhanceTextSelection: this.isInPresentationMode
+        ? false
+        : enhanceTextSelection,
     });
   }
 

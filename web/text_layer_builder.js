@@ -21,13 +21,15 @@
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { renderTextLayer, updateTextLayer } from "pdfjs-lib";
 
-const EXPAND_DIVS_TIMEOUT = 200; // ms
+const EXPAND_DIVS_TIMEOUT = 300; // ms
 
 /**
  * @typedef {Object} TextLayerBuilderOptions
  * @property {TextHighlighter} highlighter - Optional object that will handle
  *   highlighting text from the find controller.
  * @property {TextAccessibilityManager} [accessibilityManager]
+ * @property {boolean} enhanceTextSelection - Option to turn on improved
+ *   text selection.
  * @property {boolean} [isOffscreenCanvasSupported] - Allows to use an
  *   OffscreenCanvas if needed.
  */
@@ -48,6 +50,7 @@ class TextLayerBuilder {
     highlighter = null,
     accessibilityManager = null,
     isOffscreenCanvasSupported = true,
+    enhanceTextSelection = false,
   }) {
     this.textContentItemsStr = [];
     this.renderingDone = false;
@@ -57,12 +60,14 @@ class TextLayerBuilder {
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
     this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
+    this.enhanceTextSelection = enhanceTextSelection;
 
-    if (!enhanceTextSelection) {
-      this._bindMouse();
-    }
     this.div = document.createElement("div");
     this.div.className = "textLayer";
+
+    if (!this.enhanceTextSelection) {
+      this._bindMouse();
+    }
   }
 
   /**
@@ -72,15 +77,21 @@ class TextLayerBuilder {
     this.textLayerRenderTask.expandTextDivs(true);
     this.renderingDone = true;
 
-    const endOfContent = document.createElement("div");
-    endOfContent.className = "endOfContent";
-    this.div.append(endOfContent);
+    if (!this.enhanceTextSelection) {
+      const endOfContent = document.createElement("div");
+      endOfContent.className = "endOfContent";
+      this.textLayerDiv.append(endOfContent);
+    }
 
-    this.#bindMouse();
+    this._bindMouse();
   }
 
   get numTextDivs() {
     return this.textDivs.length;
+  }
+
+  get textLayerDiv() {
+    return this.div;
   }
 
   /**
@@ -127,6 +138,7 @@ class TextLayerBuilder {
       textDivProperties: this.textDivProperties,
       textContentItemsStr: this.textContentItemsStr,
       isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
+      enhanceTextSelection: this.enhanceTextSelection,
     });
 
     await this.textLayerRenderTask.promise;
@@ -175,11 +187,26 @@ class TextLayerBuilder {
    * Improves text selection by adding an additional div where the mouse was
    * clicked. This reduces flickering of the content if the mouse is slowly
    * dragged up or down.
+   *
+   * @private
    */
-  #bindMouse() {
+  _bindMouse() {
     const { div } = this;
+    let expandDivsTimer = null;
 
     div.addEventListener("mousedown", evt => {
+      if (this.enhanceTextSelection && this.textLayerRenderTask) {
+        this.textLayerRenderTask.expandTextDivs(true);
+        if (
+          (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) &&
+          expandDivsTimer
+        ) {
+          clearTimeout(expandDivsTimer);
+          expandDivsTimer = null;
+        }
+        return;
+      }
+
       const end = div.querySelector(".endOfContent");
       if (!end) {
         return;
@@ -191,9 +218,11 @@ class TextLayerBuilder {
         // However it does not work when selection is started on empty space.
         let adjustTop = evt.target !== div;
         if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-          adjustTop &&=
-            getComputedStyle(end).getPropertyValue("-moz-user-select") !==
-            "none";
+          adjustTop =
+            adjustTop &&
+            window
+              .getComputedStyle(end)
+              .getPropertyValue("-moz-user-select") !== "none";
         }
         if (adjustTop) {
           const divBounds = div.getBoundingClientRect();

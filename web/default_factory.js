@@ -155,6 +155,7 @@ class DefaultTextLayerFactory {
    * @typedef {Object} CreateTextLayerBuilderParameters
    * @property {TextHighlighter} highlighter
    * @property {TextAccessibilityManager} [accessibilityManager]
+   * @property {boolean} [enhanceTextSelection]
    * @property {boolean} [isOffscreenCanvasSupported]
    */
 
@@ -166,11 +167,13 @@ class DefaultTextLayerFactory {
     highlighter,
     accessibilityManager = null,
     isOffscreenCanvasSupported = true,
+    enhanceTextSelection = false,
   }) {
     return new TextLayerBuilder({
       highlighter,
       accessibilityManager,
       isOffscreenCanvasSupported,
+      enhanceTextSelection,
     });
   }
 }

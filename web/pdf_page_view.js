@@ -68,8 +68,9 @@ import { TextAccessibilityManager } from "./text_accessibility.js";
  * @property {?PDFRenderingQueue} [renderingQueue] - The rendering queue object.
  * @property {?IPDFTextLayerFactory} [textLayerFactory]
  * @property {number} [textLayerMode] - Controls if the text layer used for
- *   selection and searching is created. The constants from {TextLayerMode}
- *   should be used. The default value is `TextLayerMode.ENABLE`.
+ *   selection and searching is created, and if the improved text selection
+ *   behaviour is enabled. The constants from {TextLayerMode} should be used.
+ *   The default value is `TextLayerMode.ENABLE`.
  * @property {number} [annotationMode] - Controls if the annotation layer is
  *   created, and if interactive form elements or `AnnotationStorage`-data are
  *   being rendered. The constants from {@link AnnotationMode} should be used;
@@ -769,6 +770,8 @@ class PDFPageView {
         highlighter: this.textHighlighter,
         accessibilityManager: this._accessibilityManager,
         isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
+        enhanceTextSelection:
+          this.textLayerMode === TextLayerMode.ENABLE_ENHANCE,
       });
       canvasWrapper.after(this.textLayer.div);
     }
