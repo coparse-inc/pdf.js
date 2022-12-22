@@ -67,6 +67,8 @@ import { deprecated, setLayerDimensions } from "./display_utils.js";
  * @property {boolean} [mustRotate] true if the text layer must be rotated.
  * @property {boolean} [mustRescale] true if the text layer contents must be
  *   rescaled.
+ * @property {boolean} [enhanceTextSelection] - Whether to turn on the text
+ *   selection enhancement.
  */
 
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
@@ -294,8 +296,15 @@ function appendText(task, geom, styles) {
 }
 
 function layout(params) {
-  const { div, scale, properties, ctx, prevFontSize, prevFontFamily } = params;
-  const textDivProperties = this._textDivProperties.get(div);
+  const {
+    div,
+    scale,
+    properties,
+    ctx,
+    prevFontSize,
+    prevFontFamily,
+    enhanceTextSelection,
+  } = params;
   const { style } = div;
   let transform = "";
   if (properties.canvasWidth !== 0 && properties.hasText) {
@@ -315,9 +324,13 @@ function layout(params) {
       // const scale =
       //   (this._devicePixelRatio * textDivProperties.canvasWidth) / width;
       // transform = `scaleX(${scale})`;
-      transform = `scaleX(${(this._devicePixelRatio * canvasWidth) / width})`;
-      if (this._enhanceTextSelection) {
-        textDivProperties.scale = scale;
+      // this function was originally part of a class which had access to
+      // this._devicePixelRatio since it was refactored upstream and
+      // we no longer have access to `this` I am assuming
+      // it is safe to use window.devicePixelRatio instead
+      transform = `scaleX(${(window.devicePixelRatio * canvasWidth) / width})`;
+      if (enhanceTextSelection) {
+        properties.scale = scale;
       }
     }
   }
@@ -325,8 +338,8 @@ function layout(params) {
     transform = `rotate(${properties.angle}deg) ${transform}`;
   }
   if (transform.length > 0) {
-    if (this._enhanceTextSelection) {
-      textDivProperties.originalTransform = transform;
+    if (enhanceTextSelection) {
+      properties.originalTransform = transform;
     }
     style.transform = transform;
   }
@@ -674,6 +687,7 @@ class TextLayerRenderTask {
       scale: viewport.scale * (globalThis.devicePixelRatio || 1),
       properties: null,
       ctx: getCtx(0, isOffscreenCanvasSupported),
+      enhanceTextSelection: this._enhanceTextSelection,
     };
     const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
     this._transform = [1, 0, 0, -1, -pageX, pageY + pageHeight];
@@ -900,6 +914,7 @@ function updateTextLayer({
   isOffscreenCanvasSupported,
   mustRotate = true,
   mustRescale = true,
+  enhanceTextSelection = false,
 }) {
   if (mustRotate) {
     setLayerDimensions(container, { rotation: viewport.rotation });
@@ -914,6 +929,7 @@ function updateTextLayer({
       div: null,
       scale,
       properties: null,
+      enhanceTextSelection,
       ctx,
     };
     for (const div of textDivs) {

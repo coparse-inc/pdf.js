@@ -118,6 +118,7 @@ class TextLayerBuilder {
           isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
           mustRescale,
           mustRotate,
+          enhanceTextSelection: this.enhanceTextSelection,
         });
         this.show();
         this.#scale = scale;
