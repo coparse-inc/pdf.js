@@ -3,6 +3,7 @@ export type OptionalContentConfig = import("../src/display/optional_content_conf
 export type EventBus = import("./event_utils").EventBus;
 export type IL10n = import("./interfaces").IL10n;
 export type IPDFAnnotationLayerFactory = import("./interfaces").IPDFAnnotationLayerFactory;
+export type IPDFAnnotationEditorLayerFactory = import("./interfaces").IPDFAnnotationEditorLayerFactory;
 export type IPDFStructTreeLayerFactory = import("./interfaces").IPDFStructTreeLayerFactory;
 export type IPDFTextLayerFactory = import("./interfaces").IPDFTextLayerFactory;
 export type IPDFXfaLayerFactory = import("./interfaces").IPDFXfaLayerFactory;
@@ -24,7 +25,7 @@ export type PDFPageViewOptions = {
     /**
      * - The page scale display.
      */
-    scale: number;
+    scale?: number | undefined;
     /**
      * - The page viewport.
      */
@@ -55,19 +56,16 @@ export type PDFPageViewOptions = {
      * The default value is `AnnotationMode.ENABLE_FORMS`.
      */
     annotationMode?: number | undefined;
-    annotationLayerFactory: IPDFAnnotationLayerFactory;
-    xfaLayerFactory: IPDFXfaLayerFactory | null;
-    structTreeLayerFactory: IPDFStructTreeLayerFactory;
+    annotationLayerFactory?: import("./interfaces").IPDFAnnotationLayerFactory | undefined;
+    annotationEditorLayerFactory?: import("./interfaces").IPDFAnnotationEditorLayerFactory | undefined;
+    xfaLayerFactory?: import("./interfaces").IPDFXfaLayerFactory | null | undefined;
+    structTreeLayerFactory?: import("./interfaces").IPDFStructTreeLayerFactory | undefined;
     textHighlighterFactory?: Object | undefined;
     /**
      * - Path for image resources, mainly
      * for annotation icons. Include trailing slash.
      */
     imageResourcesPath?: string | undefined;
-    /**
-     * - 'canvas' or 'svg'. The default is 'canvas'.
-     */
-    renderer: string;
     /**
      * - Enables CSS only zooming. The default
      * value is `false`.
@@ -88,7 +86,7 @@ export type PDFPageViewOptions = {
     /**
      * - Localization service.
      */
-    l10n: IL10n;
+    l10n?: import("./interfaces").IL10n | undefined;
 };
 /**
  * @implements {IRenderableView}
@@ -116,27 +114,35 @@ export class PDFPageView implements IRenderableView {
     eventBus: import("./event_utils").EventBus;
     renderingQueue: import("./pdf_rendering_queue").PDFRenderingQueue | null;
     textLayerFactory: import("./interfaces").IPDFTextLayerFactory | null;
-    annotationLayerFactory: import("./interfaces").IPDFAnnotationLayerFactory;
-    xfaLayerFactory: import("./interfaces").IPDFXfaLayerFactory | null;
+    annotationLayerFactory: import("./interfaces").IPDFAnnotationLayerFactory | undefined;
+    annotationEditorLayerFactory: import("./interfaces").IPDFAnnotationEditorLayerFactory | undefined;
+    xfaLayerFactory: import("./interfaces").IPDFXfaLayerFactory | null | undefined;
     textHighlighter: any;
-    structTreeLayerFactory: import("./interfaces").IPDFStructTreeLayerFactory;
-    renderer: string;
-    l10n: import("./interfaces").IL10n;
+    structTreeLayerFactory: import("./interfaces").IPDFStructTreeLayerFactory | undefined;
+    renderer: any;
+    l10n: {
+        getLanguage(): Promise<string>;
+        getDirection(): Promise<string>;
+        get(key: any, args?: null, fallback?: any): Promise<any>;
+        translate(element: any): Promise<void>;
+    };
     paintTask: {
         promise: any;
         onRenderContinue(cont: any): void;
         cancel(): void;
+        readonly separateAnnots: any;
     } | null;
     paintedViewportMap: WeakMap<object, any>;
     renderingState: number;
     resume: (() => void) | null;
     _renderError: any;
-    _isStandalone: boolean;
+    _isStandalone: boolean | undefined;
     _annotationCanvasMap: any;
     annotationLayer: any;
+    annotationEditorLayer: any;
     textLayer: import("./text_layer_builder.js").TextLayerBuilder | null;
     zoomLayer: ParentNode | null;
-    xfaLayer: import("./xfa_layer_builder.js").XfaLayerBuilder | null;
+    xfaLayer: any;
     structTreeLayer: any;
     div: HTMLDivElement;
     setPdfPage(pdfPage: any): void;
@@ -148,15 +154,20 @@ export class PDFPageView implements IRenderableView {
     /**
      * @private
      */
+    private _renderAnnotationEditorLayer;
+    /**
+     * @private
+     */
     private _renderXfaLayer;
     _buildXfaTextContentItems(textDivs: any): Promise<void>;
     /**
      * @private
      */
     private _resetZoomLayer;
-    reset({ keepZoomLayer, keepAnnotationLayer, keepXfaLayer, }?: {
+    reset({ keepZoomLayer, keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, }?: {
         keepZoomLayer?: boolean | undefined;
         keepAnnotationLayer?: boolean | undefined;
+        keepAnnotationEditorLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
     loadingIconDiv: HTMLDivElement | undefined;
@@ -169,14 +180,16 @@ export class PDFPageView implements IRenderableView {
      * PLEASE NOTE: Most likely you want to use the `this.reset()` method,
      *              rather than calling this one directly.
      */
-    cancelRendering({ keepAnnotationLayer, keepXfaLayer }?: {
+    cancelRendering({ keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, }?: {
         keepAnnotationLayer?: boolean | undefined;
+        keepAnnotationEditorLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
     _onTextLayerRendered: any;
-    cssTransform({ target, redrawAnnotationLayer, redrawXfaLayer, }: {
+    cssTransform({ target, redrawAnnotationLayer, redrawAnnotationEditorLayer, redrawXfaLayer, }: {
         target: any;
         redrawAnnotationLayer?: boolean | undefined;
+        redrawAnnotationEditorLayer?: boolean | undefined;
         redrawXfaLayer?: boolean | undefined;
     }): void;
     get width(): number;
@@ -191,6 +204,7 @@ export class PDFPageView implements IRenderableView {
         promise: any;
         onRenderContinue(cont: any): void;
         cancel(): void;
+        readonly separateAnnots: any;
     };
     canvas: HTMLCanvasElement | undefined;
     outputScale: OutputScale | undefined;
@@ -198,12 +212,18 @@ export class PDFPageView implements IRenderableView {
         promise: any;
         onRenderContinue(cont: any): void;
         cancel(): void;
+        readonly separateAnnots: boolean;
     };
     svg: any;
     /**
      * @param {string|null} label
      */
     setPageLabel(label: string | null): void;
+    /**
+     * For use by the `PDFThumbnailView.setImage`-method.
+     * @ignore
+     */
+    get thumbnailCanvas(): HTMLCanvasElement | null | undefined;
     #private;
 }
 import { OutputScale } from "./ui_utils.js";

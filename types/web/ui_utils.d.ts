@@ -203,13 +203,8 @@ export namespace PresentationModeState {
 }
 export class ProgressBar {
     constructor(id: any, ...args: any[]);
-    visible: boolean;
-    div: Element | null;
-    bar: ParentNode | null;
-    set percent(arg: any);
-    get percent(): any;
-    _indeterminate: boolean | undefined;
-    _percent: any;
+    set percent(arg: number);
+    get percent(): number;
     setWidth(viewer: any): void;
     hide(): void;
     show(): void;
@@ -220,10 +215,10 @@ export class ProgressBar {
  * @param {boolean} [replaceInvisible]
  */
 export function removeNullCharacters(str: string, replaceInvisible?: boolean | undefined): string;
-export namespace RendererType {
-    const CANVAS: string;
-    const SVG: string;
-}
+export const RendererType: {
+    CANVAS: string;
+    SVG: string;
+} | null;
 export namespace RenderingStates {
     const INITIAL: number;
     const RUNNING: number;

@@ -127,8 +127,6 @@ export class CanvasGraphics {
     paintFormXObjectEnd(): void;
     beginGroup(group: any): void;
     endGroup(group: any): void;
-    beginAnnotations(): void;
-    endAnnotations(): void;
     beginAnnotation(id: any, rect: any, transform: any, matrix: any, hasOwnCanvas: any): void;
     annotationCanvas: any;
     endAnnotation(): void;
@@ -151,8 +149,8 @@ export class CanvasGraphics {
     getSinglePixelWidth(): number;
     getScaleForStroking(): number[];
     rescaleAndStroke(saveRestore: any): void;
-    getCanvasPosition(x: any, y: any): any[];
     isContentVisible(): boolean;
+    #private;
 }
 declare class CanvasExtraState {
     constructor(width: any, height: any);
@@ -201,7 +199,7 @@ declare class CachedCanvases {
     constructor(canvasFactory: any);
     canvasFactory: any;
     cache: any;
-    getCanvas(id: any, width: any, height: any, trackTransform: any): any;
+    getCanvas(id: any, width: any, height: any): any;
     delete(id: any): void;
     clear(): void;
 }

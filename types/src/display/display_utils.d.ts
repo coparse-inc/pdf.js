@@ -55,6 +55,7 @@ export type PageViewportCloneParameters = {
      */
     dontFlip?: boolean | undefined;
 };
+export const AnnotationPrefix: "pdfjs_internal_id_";
 export function deprecated(details: any): void;
 export class DOMCanvasFactory extends BaseCanvasFactory {
     constructor({ ownerDocument }?: {
@@ -87,6 +88,9 @@ export class DOMSVGFactory extends BaseSVGFactory {
      */
     _createSVG(type: any): any;
 }
+export function getColorValues(colors: any): void;
+export function getCurrentTransform(ctx: any): any[];
+export function getCurrentTransformInverse(ctx: any): any[];
 /**
  * Gets the filename from a given URL.
  * @param {string} url
@@ -101,6 +105,7 @@ export function getFilenameFromUrl(url: string): string;
  * @returns {string} Guessed PDF filename.
  */
 export function getPdfFilenameFromUrl(url: string, defaultFilename?: string): string;
+export function getRGB(color: any): any;
 /**
  * NOTE: This is (mostly) intended to support printing of XFA forms.
  */

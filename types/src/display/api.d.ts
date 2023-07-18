@@ -1,4 +1,5 @@
 export type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+export type BinaryData = TypedArray | ArrayBuffer | Array<number> | string;
 export type RefProxy = {
     num: number;
     gen: number;
@@ -12,11 +13,11 @@ export type DocumentInitParameters = {
      */
     url?: string | URL | undefined;
     /**
-     * - Binary PDF data. Use
-     * typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+     * - Binary PDF data.
+     * Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
      * BASE64-encoded, use `atob()` to convert it to a binary string first.
      */
-    data?: string | number[] | TypedArray | undefined;
+    data?: BinaryData | undefined;
     /**
      * - Basic authentication headers.
      */
@@ -186,6 +187,7 @@ export type DocumentInitParameters = {
      */
     pdfBug?: boolean | undefined;
 };
+export type GetDocumentParameters = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitParameters;
 export type IPDFStreamFactory = Function;
 export type OnProgressParameters = {
     /**
@@ -417,6 +419,7 @@ export type RenderParameters = {
      * annotation ids with canvases used to render them.
      */
     annotationCanvasMap?: Map<string, HTMLCanvasElement> | undefined;
+    printAnnotationStorage?: PrintAnnotationStorage | undefined;
 };
 /**
  * Page getOperatorList parameters.
@@ -442,6 +445,7 @@ export type GetOperatorListParameters = {
      * The default value is `AnnotationMode.ENABLE`.
      */
     annotationMode?: number | undefined;
+    printAnnotationStorage?: PrintAnnotationStorage | undefined;
 };
 /**
  * Structure tree node. The root node will have a role "Root".
@@ -514,6 +518,9 @@ export let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
  * } TypedArray
  */
 /**
+ * @typedef { TypedArray | ArrayBuffer | Array<number> | string } BinaryData
+ */
+/**
  * @typedef {Object} RefProxy
  * @property {number} num
  * @property {number} gen
@@ -522,10 +529,10 @@ export let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
  * Document initialization / loading parameters object.
  *
  * @typedef {Object} DocumentInitParameters
- * @property {string|URL} [url] - The URL of the PDF.
- * @property {TypedArray|Array<number>|string} [data] - Binary PDF data. Use
- *    typed arrays (Uint8Array) to improve the memory usage. If PDF data is
- *    BASE64-encoded, use `atob()` to convert it to a binary string first.
+ * @property {string | URL} [url] - The URL of the PDF.
+ * @property {BinaryData} [data] - Binary PDF data.
+ *   Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+ *   BASE64-encoded, use `atob()` to convert it to a binary string first.
  * @property {Object} [httpHeaders] - Basic authentication headers.
  * @property {boolean} [withCredentials] - Indicates whether or not
  *   cross-site Access-Control requests should be made using credentials such
@@ -612,18 +619,23 @@ export let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
  *   (see `web/debugger.js`). The default value is `false`.
  */
 /**
+ * @typedef { string | URL | TypedArray | ArrayBuffer |
+ *            PDFDataRangeTransport | DocumentInitParameters
+ * } GetDocumentParameters
+ */
+/**
  * This is the main entry point for loading a PDF and interacting with it.
  *
  * NOTE: If a URL is used to fetch the PDF data a standard Fetch API call (or
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param {string|URL|TypedArray|PDFDataRangeTransport|DocumentInitParameters}
+ * @param {GetDocumentParameters}
  *   src - Can be a URL where a PDF file is located, a typed array (Uint8Array)
  *         already populated with data, or a parameter object.
  * @returns {PDFDocumentLoadingTask}
  */
-export function getDocument(src: string | URL | TypedArray | PDFDataRangeTransport | DocumentInitParameters): PDFDocumentLoadingTask;
+export function getDocument(src: GetDocumentParameters): PDFDocumentLoadingTask;
 export class LoopbackPort {
     _listeners: any[];
     _deferred: Promise<void>;
@@ -675,7 +687,7 @@ export class PDFDataRangeTransport {
  * after which individual pages can be rendered.
  */
 export class PDFDocumentLoadingTask {
-    static "__#2@#docId": number;
+    static "__#16@#docId": number;
     _capability: import("../shared/util.js").PromiseCapability;
     _transport: any;
     _worker: any;
@@ -1115,6 +1127,7 @@ export class PDFDocumentProxy {
  *   states set.
  * @property {Map<string, HTMLCanvasElement>} [annotationCanvasMap] - Map some
  *   annotation ids with canvases used to render them.
+ * @property {PrintAnnotationStorage} [printAnnotationStorage]
  */
 /**
  * Page getOperatorList parameters.
@@ -1134,6 +1147,7 @@ export class PDFDocumentProxy {
  *      (as above) but where interactive form elements are updated with data
  *      from the {@link AnnotationStorage}-instance; useful e.g. for printing.
  *   The default value is `AnnotationMode.ENABLE`.
+ * @property {PrintAnnotationStorage} [printAnnotationStorage]
  */
 /**
  * Structure tree node. The root node will have a role "Root".
@@ -1232,14 +1246,14 @@ export class PDFPageProxy {
      * @returns {RenderTask} An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, }: RenderParameters, ...args: any[]): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderParameters, ...args: any[]): RenderTask;
     /**
      * @param {GetOperatorListParameters} params - Page getOperatorList
      *   parameters.
      * @returns {Promise<PDFOperatorList>} A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent, annotationMode, }?: GetOperatorListParameters): Promise<PDFOperatorList>;
+    getOperatorList({ intent, annotationMode, printAnnotationStorage, }?: GetOperatorListParameters): Promise<PDFOperatorList>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -1313,7 +1327,7 @@ export class PDFPageProxy {
  * @param {PDFWorkerParameters} params - The worker initialization parameters.
  */
 export class PDFWorker {
-    static "__#3@#workerPorts": WeakMap<object, any>;
+    static "__#17@#workerPorts": WeakMap<object, any>;
     /**
      * @param {PDFWorkerParameters} params - The worker initialization parameters.
      */
@@ -1370,7 +1384,6 @@ export namespace PDFWorkerUtil {
  */
 export class RenderTask {
     constructor(internalRenderTask: any);
-    _internalRenderTask: any;
     /**
      * Callback for incremental rendering -- a function that will be called
      * each time the rendering is paused.  To continue rendering call the
@@ -1389,6 +1402,12 @@ export class RenderTask {
      * this object extends will be rejected when cancelled.
      */
     cancel(): void;
+    /**
+     * Whether form fields are rendered separately from the main operatorList.
+     * @type {boolean}
+     */
+    get separateAnnots(): boolean;
+    #private;
 }
 /**
  * Sets the function that instantiates an {IPDFStream} as an alternative PDF
@@ -1404,6 +1423,7 @@ export function setPDFNetworkStreamFactory(pdfNetworkStreamFactory: IPDFStreamFa
 export const version: string;
 import { PageViewport } from "./display_utils.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
+import { PrintAnnotationStorage } from "./annotation_storage.js";
 import { DOMCanvasFactory } from "./display_utils.js";
 import { DOMCMapReaderFactory } from "./display_utils.js";
 import { DOMStandardFontDataFactory } from "./display_utils.js";
