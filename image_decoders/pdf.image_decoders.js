@@ -9028,8 +9028,8 @@ var _jpg = __w_pdfjs_require__(10);
 
 var _jpx = __w_pdfjs_require__(11);
 
-const pdfjsVersion = '2.16.48';
-const pdfjsBuild = '7e71ca9';
+const pdfjsVersion = '2.16.49';
+const pdfjsBuild = 'f1b3685';
 })();
 
 /******/ 	return __webpack_exports__;
