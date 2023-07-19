@@ -458,6 +458,8 @@ class Annotation {
       this._streams.push(this.appearance);
     }
 
+    const defaultAppearance = dict.get("DA") || null;
+
     // Expose public properties using a data object.
     this.data = {
       annotationFlags: this.flags,
@@ -473,6 +475,7 @@ class Annotation {
       rect: this.rectangle,
       subtype: params.subtype,
       hasOwnCanvas: false,
+      defaultAppearance
     };
 
     if (params.collectFields) {
