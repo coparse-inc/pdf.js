@@ -10,7 +10,6 @@
     "autoprefixer": "^10.4.8",
     "babel-loader": "^8.2.5",
     "caniuse-lite": "^1.0.30001380",
-    "canvas": "^2.9.3",
     "core-js": "^3.24.1",
     "cross-env": "^7.0.3",
     "dialog-polyfill": "^0.5.6",
@@ -64,6 +63,9 @@
     "webpack-stream": "^7.0.0",
     "wintersmith": "^2.5.0",
     "yargs": "^17.5.1"
+  },
+  "optionalDependencies": {
+    "canvas": "^2.9.3"
   },
   "repository": {
     "type": "git",
