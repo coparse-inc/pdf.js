@@ -64,9 +64,6 @@
     "wintersmith": "^2.5.0",
     "yargs": "^17.5.1"
   },
-  "optionalDependencies": {
-    "canvas": "^2.9.3"
-  },
   "repository": {
     "type": "git",
     "url": "git://github.com/mozilla/pdf.js.git"
