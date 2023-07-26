@@ -134,7 +134,6 @@ class AnnotationFactory {
       collectFields,
       pageIndex,
     };
-    console.log(parameters);
 
     switch (subtype) {
       case "Link":
