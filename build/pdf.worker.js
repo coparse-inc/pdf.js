@@ -117,7 +117,7 @@ class WorkerMessageHandler {
     const WorkerTasks = [];
     const verbosity = (0, _util.getVerbosityLevel)();
     const apiVersion = docParams.apiVersion;
-    const workerVersion = '2.16.50';
+    const workerVersion = '2.16.51';
 
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match ` + `the Worker version "${workerVersion}".`);
@@ -5671,6 +5671,9 @@ class Annotation {
       this._streams.push(this.appearance);
     }
 
+    const defaultAppearance = dict.get("DA") || null;
+    const rawColor = dict.get("C") || null;
+    const rawInteriorColor = dict.get("IC") || null;
     this.data = {
       annotationFlags: this.flags,
       borderStyle: this.borderStyle,
@@ -5684,7 +5687,10 @@ class Annotation {
       modificationDate: this.modificationDate,
       rect: this.rectangle,
       subtype: params.subtype,
-      hasOwnCanvas: false
+      hasOwnCanvas: false,
+      defaultAppearance,
+      rawColor,
+      rawInteriorColor
     };
 
     if (params.collectFields) {
@@ -5956,6 +5962,15 @@ class Annotation {
 
   async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
     const data = this.data;
+
+    if (["FreeText", "Square", "Circle", "Polygon"].includes(this.data.subtype)) {
+      return {
+        opList: new _operator_list.OperatorList(),
+        separateForm: false,
+        separateCanvas: false
+      };
+    }
+
     let appearance = this.appearance;
     const isUsingOwnCanvas = !!(this.data.hasOwnCanvas && intent & _util.RenderingIntentFlag.DISPLAY);
 
@@ -75394,8 +75409,8 @@ Object.defineProperty(exports, "WorkerMessageHandler", ({
 
 var _worker = __w_pdfjs_require__(1);
 
-const pdfjsVersion = '2.16.50';
-const pdfjsBuild = '1c45727';
+const pdfjsVersion = '2.16.51';
+const pdfjsBuild = '6484b90';
 })();
 
 /******/ 	return __webpack_exports__;

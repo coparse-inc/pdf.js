@@ -1377,7 +1377,7 @@ async function _fetchDocument(worker, source, pdfDataRangeTransport, docId) {
 
   const workerId = await worker.messageHandler.sendWithPromise("GetDocRequest", {
     docId,
-    apiVersion: '2.16.50',
+    apiVersion: '2.16.51',
     source: {
       data: source.data,
       url: source.url,
@@ -3541,9 +3541,9 @@ class InternalRenderTask {
 
 }
 
-const version = '2.16.50';
+const version = '2.16.51';
 exports.version = version;
-const build = '1c45727';
+const build = '6484b90';
 exports.build = build;
 
 /***/ }),
@@ -13170,34 +13170,7 @@ class AnnotationElement {
     return quadrilaterals;
   }
 
-  _createPopup(trigger, data) {
-    let container = this.container;
-
-    if (this.quadrilaterals) {
-      trigger = trigger || this.quadrilaterals;
-      container = this.quadrilaterals[0];
-    }
-
-    if (!trigger) {
-      trigger = document.createElement("div");
-      trigger.className = "popupTriggerArea";
-      container.append(trigger);
-    }
-
-    const popupElement = new PopupElement({
-      container,
-      trigger,
-      color: data.color,
-      titleObj: data.titleObj,
-      modificationDate: data.modificationDate,
-      contentsObj: data.contentsObj,
-      richText: data.richText,
-      hideWrapper: true
-    });
-    const popup = popupElement.render();
-    popup.style.left = "100%";
-    container.append(popup);
-  }
+  _createPopup(trigger, data) {}
 
   _renderQuadrilaterals(className) {
     for (const quadrilateral of this.quadrilaterals) {
@@ -19740,8 +19713,8 @@ var _svg = __w_pdfjs_require__(31);
 
 var _xfa_layer = __w_pdfjs_require__(29);
 
-const pdfjsVersion = '2.16.50';
-const pdfjsBuild = '1c45727';
+const pdfjsVersion = '2.16.51';
+const pdfjsBuild = '6484b90';
 {
   if (_is_node.isNodeJS) {
     const {
