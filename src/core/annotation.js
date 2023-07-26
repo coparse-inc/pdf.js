@@ -458,6 +458,10 @@ class Annotation {
       this._streams.push(this.appearance);
     }
 
+    const defaultAppearance = dict.get("DA") || null;
+    const rawColor = dict.get("C") || null;
+    const rawInteriorColor = dict.get("IC") || null;
+
     // Expose public properties using a data object.
     this.data = {
       annotationFlags: this.flags,
@@ -473,6 +477,9 @@ class Annotation {
       rect: this.rectangle,
       subtype: params.subtype,
       hasOwnCanvas: false,
+      defaultAppearance,
+      rawColor,
+      rawInteriorColor,
     };
 
     if (params.collectFields) {
@@ -875,6 +882,17 @@ class Annotation {
     annotationStorage
   ) {
     const data = this.data;
+
+    // We won't render these to the canvas, but instead activate them as
+    // placeables
+    if (["FreeText", "Square", "Circle", "Polygon"].includes(this.data.subtype)) {
+      return {
+        opList: new OperatorList(),
+        separateForm: false,
+        separateCanvas: false,
+      };
+    }
+
     let appearance = this.appearance;
     const isUsingOwnCanvas = !!(
       this.data.hasOwnCanvas && intent & RenderingIntentFlag.DISPLAY
@@ -896,6 +914,7 @@ class Annotation {
       ["ExtGState", "ColorSpace", "Pattern", "Shading", "XObject", "Font"],
       appearance
     );
+
     const bbox = appearanceDict.getArray("BBox") || [0, 0, 1, 1];
     const matrix = appearanceDict.getArray("Matrix") || [1, 0, 0, 1, 0, 0];
     const transform = getTransformMatrix(data.rect, bbox, matrix);

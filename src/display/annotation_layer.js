@@ -459,35 +459,38 @@ class AnnotationElement {
    * @memberof AnnotationElement
    */
   _createPopup(trigger, data) {
-    let container = this.container;
-    if (this.quadrilaterals) {
-      trigger = trigger || this.quadrilaterals;
-      container = this.quadrilaterals[0];
-    }
+    // we dont want to render any of the floating popup for annotation metadata
+    return;
 
-    // If no trigger element is specified, create it.
-    if (!trigger) {
-      trigger = document.createElement("div");
-      trigger.className = "popupTriggerArea";
-      container.append(trigger);
-    }
+    // let container = this.container;
+    // if (this.quadrilaterals) {
+    //   trigger = trigger || this.quadrilaterals;
+    //   container = this.quadrilaterals[0];
+    // }
 
-    const popupElement = new PopupElement({
-      container,
-      trigger,
-      color: data.color,
-      titleObj: data.titleObj,
-      modificationDate: data.modificationDate,
-      contentsObj: data.contentsObj,
-      richText: data.richText,
-      hideWrapper: true,
-    });
-    const popup = popupElement.render();
+    // // If no trigger element is specified, create it.
+    // if (!trigger) {
+    //   trigger = document.createElement("div");
+    //   trigger.className = "popupTriggerArea";
+    //   container.append(trigger);
+    // }
 
-    // Position the popup next to the annotation's container.
-    popup.style.left = "100%";
+    // const popupElement = new PopupElement({
+    //   container,
+    //   trigger,
+    //   color: data.color,
+    //   titleObj: data.titleObj,
+    //   modificationDate: data.modificationDate,
+    //   contentsObj: data.contentsObj,
+    //   richText: data.richText,
+    //   hideWrapper: true,
+    // });
+    // const popup = popupElement.render();
 
-    container.append(popup);
+    // // Position the popup next to the annotation's container.
+    // popup.style.left = "100%";
+
+    // container.append(popup);
   }
 
   /**
