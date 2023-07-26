@@ -459,6 +459,9 @@ class AnnotationElement {
    * @memberof AnnotationElement
    */
   _createPopup(trigger, data) {
+    // we dont want to render any of the floating popup for annotation metadata
+    return;
+
     let container = this.container;
     if (this.quadrilaterals) {
       trigger = trigger || this.quadrilaterals;
