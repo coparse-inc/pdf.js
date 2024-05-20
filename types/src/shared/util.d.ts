@@ -222,6 +222,17 @@ export class FeatureTest {
     static get isOffscreenCanvasSupported(): any;
 }
 export const FONT_IDENTITY_MATRIX: number[];
+export namespace FontRenderOps {
+    const BEZIER_CURVE_TO: number;
+    const MOVE_TO: number;
+    const LINE_TO: number;
+    const QUADRATIC_CURVE_TO: number;
+    const RESTORE: number;
+    const SAVE: number;
+    const SCALE: number;
+    const TRANSFORM: number;
+    const TRANSLATE: number;
+}
 export namespace FontType {
     const UNKNOWN: string;
     const TYPE1: string;
